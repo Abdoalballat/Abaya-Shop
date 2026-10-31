@@ -1,6 +1,6 @@
 <?php
 
-// 1. إنشاء مجلدات التخزين المؤقتة في بيئة Vercel
+// إنشاء مجلدات التخزين المؤقتة في /tmp
 $storagePath = '/tmp/storage';
 if (!file_exists($storagePath)) {
     @mkdir($storagePath . '/framework/views', 0755, true);
@@ -10,10 +10,8 @@ if (!file_exists($storagePath)) {
     @mkdir($storagePath . '/logs', 0755, true);
 }
 
-// 2. تعيين مسار Storage لبيئة العمل
-putenv("APP_STORAGE_PATH={$storagePath}");
-$_ENV['APP_STORAGE_PATH'] = $storagePath;
-$_SERVER['APP_STORAGE_PATH'] = $storagePath;
+// تعيين المسارات للـ Storage والـ Compiled Views في البيئة
+putenv("VIEW_COMPILED_PATH={$storagePath}/framework/views");
+$_ENV['VIEW_COMPILED_PATH'] = "{$storagePath}/framework/views";
 
-// 3. تشغيل ملف التطبيق الرئيسي
 require __DIR__ . '/../public/index.php';
