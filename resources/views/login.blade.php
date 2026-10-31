@@ -32,9 +32,9 @@
 
             <!-- رقم الهاتف -->
             <div class="space-y-1.5">
-                <label for="phone" class="block text-xs font-bold text-[#8A6E78] mr-2">رقم الهاتف</label>
+                <label for="phone" class="block text-xs font-bold text-[#8A6E78] mr-2">رقم الهاتف او الايميل</label>
                 <div class="relative">
-                    <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" required placeholder="01xxxxxxxxx" dir="ltr" class="w-full h-[52px] px-4 rounded-[14px] bg-white border border-[#F0D9DF] focus:outline-none focus:ring-2 focus:ring-[#C2577A]/20 focus:border-[#C2577A] transition-all text-left placeholder:text-right">
+                    <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" required placeholder="01xxxxxxxxx or email" dir="ltr" class="w-full h-[52px] px-4 rounded-[14px] bg-white border border-[#F0D9DF] focus:outline-none focus:ring-2 focus:ring-[#C2577A]/20 focus:border-[#C2577A] transition-all text-left placeholder:text-right">
                 </div>
                 @error('phone') <span class="text-xs text-red-500 font-bold block mt-1">{{ $message }}</span> @enderror
             </div>
@@ -61,7 +61,7 @@
                     </div>
                     <span class="text-[13px] text-[#8A6E78] group-hover:text-[#C2577A] transition-colors">تذكرني</span>
                 </label>
-                <a href="#" class="text-[13px] text-[#8A6E78] hover:text-[#C2577A] hover:underline underline-offset-4 transition-all">نسيت كلمة المرور؟</a>
+                <!-- <a href="#" class="text-[13px] text-[#8A6E78] hover:text-[#C2577A] hover:underline underline-offset-4 transition-all">نسيت كلمة المرور؟</a> -->
             </div>
 
             <!-- زر الدخول -->

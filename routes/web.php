@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrderController as CustomerOrderController;
-use App\Http\Controllers\CheckoutAuthController; // إن وجد وله استخدام
 use App\Http\Controllers\PostCheckoutRegisterController;
 
 // Admin Controllers
@@ -23,10 +22,11 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 
 // الصفحة الرئيسية
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/product/{id}', [HomeController::class, 'show'])->name('product.show');
 
-// سلة المشتريات والدفع (Checkout)
-Route::view('/cart', 'shop.cart')->name('cart'); // تأكد إن الفيو ده موجود عندك، أو شيله لو بتكتفي بالـ checkout
-Route::view('/checkout', 'checkout.index')->name('checkout.index'); 
+// سلة المشتريات والدفع (Checkout المدمجة)
+Route::get('/cart', [CustomerOrderController::class, 'create'])->name('cart');
+Route::get('/checkout', [CustomerOrderController::class, 'create'])->name('checkout.index');
 
 // حفظ الطلب الجديد (قادم من صفحة الدفع)
 Route::post('/orders', [CustomerOrderController::class, 'store'])->name('orders.store');
@@ -37,16 +37,16 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
+Route::view('/checkout/success', 'checkout.success')->name('checkout.success');
+Route::post('/checkout/register', [PostCheckoutRegisterController::class, 'store'])->name('post.checkout.register');
 // ==========================================
 // 2. مسارات العميل المسجل (Customer Protected)
 // ==========================================
 Route::middleware(['auth'])->group(function () {
     
     // صفحة نجاح الطلب
-    Route::view('/checkout/success', 'checkout.success')->name('checkout.success');
     
-    // تسجيل حساب جديد بعد إتمام الطلب (لو العميل حابب يعمل حساب)
-    Route::post('/checkout/register', [PostCheckoutRegisterController::class, 'store'])->name('post.checkout.register');
+    // تسجيل حساب جديد بعد إتمام الطلب (اختياري)
     
     // تتبع الطلبات للعميل
     Route::get('/orders/track', [CustomerOrderController::class, 'trackForm'])->name('orders.track.form');
@@ -58,30 +58,42 @@ Route::middleware(['auth'])->group(function () {
 // ==========================================
 // 3. مسارات لوحة التحكم (Admin Protected)
 // ==========================================
-// نستخدم الميدل وير اللي أنت عملته CheckAdminRole واسمه المستعار (role)
-Route::middleware(['auth', 'role:admin']) // افتراض أن دور المدير اسمه 'admin' في الداتابيز
+// استخدام ميدل وير auth والتأكد من دور الأدمن
+Route::middleware(['auth', 'role:admin']) 
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
-        // الرئيسية للوحة التحكم
+        // الرئيسية للوحة التحكم (تم التعديل هنا لجلب البيانات من الداتابيز)
         Route::get('/', function () {
-            return view('layouts.admin');
+            // سحب البيانات من الموديلات وتمريرها للوحة التحكم
+            $orders = \App\Models\Order::latest()->take(50)->get();
+            $departments = \App\Models\Department::latest()->get();
+            $governorates = \App\Models\Governorate::latest()->get();
+            $products = \App\Models\Product::latest()->get();
+            $colors = \App\Models\Color::latest()->get();
+            $sizes = \App\Models\Size::latest()->get();
+
+            return view('admin.dashboard', compact(
+                'orders', 'departments', 'governorates', 'colors', 'sizes','products'
+            ));
         })->name('dashboard');
 
-        // إدارة البيانات الأساسية (CRUDs)
+        // إدارة البيانات الأساسية (CRUDs) - تعمل بناءً على الـ Controllers لديك
         Route::resource('departments', DepartmentController::class)->except(['show']);
         Route::resource('products', ProductController::class)->except(['show']);
         Route::resource('governorates', GovernorateController::class)->except(['show']);
         Route::resource('colors', ColorController::class)->except(['show']);
         Route::resource('sizes', SizeController::class)->except(['show']);
 
-        // مسار حذف صور المنتجات من ImageKit (Custom Route)
+        Route::post('products/store',[ProductController::class,'store'])->name('products.store');
+        // مسار حذف صور المنتجات
         Route::delete('products/images/{image}', [ProductController::class, 'destroyImage'])->name('products.images.destroy');
 
-        // إدارة الطلبات (عرض وتحديث حالة فقط)
+        // إدارة الطلبات
         Route::get('orders', [AdminOrderController::class, 'index'])->name('orders.index');
         Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
         Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
+        Route::delete('orders/{order}', [AdminOrderController::class, 'destroy'])->name('orders.destroy');
 
     });

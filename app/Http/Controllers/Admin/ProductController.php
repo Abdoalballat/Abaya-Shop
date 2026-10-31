@@ -43,65 +43,55 @@ public function index()
 
     public function store(Request $request)
     {
+        // 1. تحديث الـ Validation ليطابق أسماء الحقول في الفورم
+        // dd('here');
         $request->validate([
-            'name'        => 'required|string|max:255',
-            'code'                => 'required|string|max:255|unique:products,code',
-            'department_id'       => 'required|exists:departments,id',
-            'price'               => 'required|numeric|min:0',
-            'description'         => 'nullable|string',
-            'material_type'       => 'nullable|string|max:255',
-            'main_image'          => 'required|image|max:4096',
-            'gallery_images.*'    => 'nullable|image|max:4096',
-            'variance'            => 'required|array|min:1',
-            'variance.*.color_id' => 'required|exists:colors,id',
-            'variance.*.size_id'  => 'required|exists:sizes,id',
-            'variance.*.stock'    => 'required|integer|min:0',
-            ]);
-            
-            // dd(["here".$request]);
-        DB::transaction(function () use ($request) {
-            // 1. إنشاء المنتج
-            $product = Product::create([
-                'department_id' => $request->department_id,
-                'code'          => $request->code,
-                'name'  => $request->name,
-                'description'   => $request->description,
-                'material_type' => $request->material_type,
-                'price'         => $request->price,
-                'is_active'     => $request->has('is_active'),
-            ]);
+            'name'          => 'required|string|max:255',
+            'code'          => 'required|string|max:255',
+            'price'         => 'required|numeric',
+            'department_id' => 'required|exists:departments,id',
+            'primary_image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048', // تم تعديل الاسم هنا
+            'variances'     => 'required|array', // تم تعديل الاسم هنا للجمع
+            'variances.*.color_id' => 'required|exists:colors,id',
+            'variances.*.size_id'  => 'required|exists:sizes,id',
+            'variances.*.stock'    => 'required|integer|min:0',
+        ], [
+            // رسائل خطأ مخصصة بالعربي (اختياري)
+            'primary_image.required' => 'الصورة الرئيسية للموديل مطلوبة.',
+            'variances.required'     => 'يجب إضافة لون ومقاس واحد على الأقل للموديل.',
+        ]);
 
-            // 2. رفع الصورة الرئيسية (is_head = true) إلى ImageKit
-            if ($request->hasFile('main_image')) {
-                $mainUploaded = $this->imageKit->upload($request->file('main_image'), 'products');
-                $product->images()->create([
-                    'image_path'     => $mainUploaded->url,
-                    'is_head' => true,
-                ]);
-            }
+        // 2. كود الحفظ (استخدم variances بدل variance)
+        $product = Product::create([
+            'name'          => $request->name,
+            'code'          => $request->code,
+            'price'         => $request->price,
+            'department_id' => $request->department_id,
+            'material'      => $request->material,
+            'description'   => $request->description,
+        ]);
 
-            // 3. رفع الصور الإضافية (is_head = false)
-            if ($request->hasFile('gallery_images')) {
-                foreach ($request->file('gallery_images') as $imageFile) {
-                    $uploaded = $this->imageKit->upload($imageFile, 'products');
-                    $product->images()->create([
-                        'image_path'     => $uploaded->url,
-                        'is_head' => false,
+        // 3. حفظ الألوان والمقاسات
+        if ($request->has('variances')) {
+            foreach ($request->variances as $variance) {
+                if (isset($variance['color_id']) && isset($variance['size_id']) && isset($variance['stock'])) {
+                    $product->variances()->create([
+                        'color_id' => $variance['color_id'],
+                        'size_id'  => $variance['size_id'],
+                        'stock'    => $variance['stock'],
                     ]);
                 }
             }
+        }
 
-            // 4. حفظ المتغيرات والمخزون في جدول product_variance
-            foreach ($request->variance as $varData) {
-                $product->variances()->create([
-                    'color_id' => $varData['color_id'],
-                    'size_id'  => $varData['size_id'],
-                    'stock'    => $varData['stock'],
-                ]);
-            }
-        });
+        // 4. كود حفظ الصورة الرئيسية (باستخدام primary_image)
+        if ($request->hasFile('primary_image')) {
+            // كود الرفع الخاص بك هنا
+        }
 
-        return redirect()->route('admin.products.index')->with('success', 'تم حفظ المنتج ومخزونه بنجاح.');
+        // توجيه الأدمن لنفس القسم مع رسالة نجاح
+        return redirect(route('admin.dashboard') . '#add-product-section')
+               ->with('success', 'تم إضافة الموديل بنجاح!');
     }
 
 public function edit(Product $product)
@@ -142,6 +132,7 @@ public function edit(Product $product)
             'variance.*.size_id'  => 'required|exists:sizes,id',
             
             'variance.*.stock'    => 'required|integer|min:0',
+            //
 
         ]);
         // dd([$request]);
@@ -159,18 +150,18 @@ public function edit(Product $product)
             ]);
 
             // 3. تحديد الصورة الرئيسية الجديدة (باستخدام is_head)
-           if ($request->filled('main_image_id')) {
-                $product->images()->update(['is_main' => false]);
-                $product->images()->where('id', $request->main_image_id)->update(['is_main' => true]);
+            if ($request->filled('main_image_id')) {
+                $product->images()->update(['is_head' => false]);
+                $product->images()->where('id', $request->main_image_id)->update(['is_head' => true]);
             }
 
-            // 4. رفع أي صور إضافية للمعرض (باستخدام url و is_main)
+            // 4. رفع أي صور إضافية للمعرض (باستخدام url و is_head)
             if ($request->hasFile('gallery_images')) {
                 foreach ($request->file('gallery_images') as $imageFile) {
                     $uploaded = $this->imageKit->upload($imageFile, 'products');
                     $product->images()->create([
                         'url'     => $uploaded->url,
-                        'is_main' => false,
+                        'is_head' => false,
                     ]);
                 }
             }
@@ -192,8 +183,8 @@ public function edit(Product $product)
     public function destroy(Product $product)
     {
         $product->delete();
-        return redirect()->route('admin.products.index')->with('success', 'تم حذف العباية بنجاح.');
-    }
+return redirect(route('admin.dashboard') . '#products-section')
+                ->with('success', 'تم إضافة الموديل بنجاح!');    }
 
     public function destroyImage(ProductImage $image)
     {

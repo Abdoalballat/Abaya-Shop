@@ -23,9 +23,11 @@ public function images()
 
     // إضافة هذه الدالة لجلب الصورة الرئيسية
 public function primaryImage()
-    {
-        return $this->hasOne(ProductImage::class)->where('is_main', true);
-    }
+{
+    return $this->hasOne(ProductImage::class)
+        ->orderByDesc('is_main')
+        ->orderBy('id');
+}
 
 public function variances()
 {

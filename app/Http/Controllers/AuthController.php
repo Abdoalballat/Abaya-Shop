@@ -13,11 +13,12 @@ class AuthController extends Controller
     // 1. عرض صفحة تسجيل الدخول
     public function showLoginForm()
     {
-        return view('auth.login');
+        return view('login');
     }
+
+    // 2. تسجيل أدمن جديد
     public function registerAdmin(Request $request)
     {
-        // 1. التحقق من البيانات (استخدام الإيميل)
         $validator = Validator::make($request->all(), [
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'unique:users,email', 'max:255'],
@@ -31,15 +32,13 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // 2. إنشاء حساب الأدمن
         $admin = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role'     => 'admin', // تعيين صلاحية الأدمن
+            'password' => Hash::make($request->password), 
+            'role'     => 'admin', 
         ]);
 
-        // 3. إرجاع استجابة JSON
         return response()->json([
             'status'  => 'success',
             'message' => 'تم إنشاء حساب الإدارة بنجاح',
@@ -49,24 +48,28 @@ class AuthController extends Controller
         ], 201);
     }
 
-    // 2. معالجة طلب تسجيل الدخول
+    // 3. معالجة طلب تسجيل الدخول (تم التعديل هنا)
     public function login(Request $request)
     {
-        // التحقق من صحة البيانات (Validation)
-        $credentials = $request->validate([
+        // اسم الحقل القادم من الفورم هو phone (حسب كودك القديم)
+        $request->validate([
             'phone'    => ['required', 'string'],
             'password' => ['required', 'string'],
         ], [
-            'phone.required' => 'رقم الهاتف مطلوب',
+            'phone.required' => 'البريد الإلكتروني أو رقم الهاتف مطلوب',
             'password.required' => 'كلمة المرور مطلوبة',
         ]);
 
-        // محاولة تسجيل الدخول
-        if (Auth::attempt(['phone' => $credentials['phone'], 'password' => $credentials['password']], $request->boolean('remember'))) {
+        // تحديد نوع المدخل: هل هو إيميل أم رقم هاتف؟
+        $loginValue = $request->input('phone');
+        $fieldType = filter_var($loginValue, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+
+        // محاولة تسجيل الدخول بناءً على النوع الذي تم اكتشافه
+        if (Auth::attempt([$fieldType => $loginValue, 'password' => $request->input('password')], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // لو اليوزر ده أدمن (عنده صلاحية الإدارة)، وجهه للوحة التحكم
-            if (Auth::user()->is_admin) { // تأكد إن اسم الكولوم ده مطابق للي في الداتابيز عندك
+            // التحقق من الصلاحية بناءً على عمود role كما تم حفظه في التسجيل
+            if (Auth::user()->role === 'admin') { 
                 return redirect()->route('admin.dashboard');
             }
 
@@ -74,13 +77,13 @@ class AuthController extends Controller
             return redirect()->route('home');
         }
 
-        // لو البيانات غلط، رجعه لنفس الصفحة مع رسالة خطأ
+        // لو البيانات غلط
         return back()->withErrors([
-            'phone' => 'بيانات الدخول غير صحيحة، يرجى التأكد من رقم الهاتف وكلمة المرور.',
+            'phone' => 'بيانات الدخول غير صحيحة، يرجى التأكد من الإيميل/رقم الهاتف وكلمة المرور.',
         ])->onlyInput('phone');
     }
 
-    // 3. تسجيل الخروج
+    // 4. تسجيل الخروج
     public function logout(Request $request)
     {
         Auth::logout();

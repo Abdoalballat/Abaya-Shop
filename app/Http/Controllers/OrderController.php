@@ -6,6 +6,7 @@ use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\TrackOrderRequest;
 use App\Services\OrderService;
 use App\Models\Order;
+use App\Models\Governorate; // <-- ضفنا الموديل هنا
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Exception;
@@ -19,7 +20,17 @@ class OrderController extends Controller
         $this->orderService = $orderService;
     }
 
-public function store(StoreOrderRequest $request): RedirectResponse
+    // الدالة دي المسؤولة عن فتح صفحة إتمام الطلب (Checkout)
+    public function create(): View
+    {
+        // سحب المحافظات من الداتابيز
+        $governorates = Governorate::all();
+
+        // تمريرها لصفحة الدفع (غير 'checkout' لاسم ملف الـ Blade بتاعك لو مختلف)
+        return view('checkout.index', compact('governorates'));
+    }
+
+    public function store(StoreOrderRequest $request): RedirectResponse
     {
         try {
             $data = $request->validated();
@@ -30,16 +41,13 @@ public function store(StoreOrderRequest $request): RedirectResponse
 
             $order = $this->orderService->createOrder($data);
 
-        return redirect()->route('orders.success')->with([
-            'success'      => 'تم استلام طلبك بنجاح، وجاري مراجعة الإيصال.',
-            'order_serial' => $order->order_serial,
-            'order_id'     => $order->id, // أضفنا هذا السطر لربط الحساب لاحقاً
-]);
+            return redirect()->route('checkout.success')->with([
+                'success'      => 'تم استلام طلبك بنجاح، وجاري مراجعة الإيصال.',
+                'order_serial' => $order->order_serial,
+                'order_id'     => $order->id, 
+            ]);
         } catch (Exception $e) {
-            // السطر ده هيوقف الـ Redirect ويطبعلك الإيرور اللي حاصل جوه الـ Service
             dd('Error Happen: ' . $e->getMessage(), 'Line: ' . $e->getLine(), 'File: ' . $e->getFile());
-            
-            // return back()->withInput()->withErrors(['error' => $e->getMessage()]);
         }
     }
 

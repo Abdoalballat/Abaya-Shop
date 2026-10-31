@@ -32,9 +32,21 @@ class OrderController extends Controller
             'status'         => 'nullable|string|in:new,pending,processing,shipped,delivered,cancelled',
             'payment_status' => 'nullable|string|in:pending,paid,failed',
         ]);
+        // dd(['ikh hgovh' ,$request]);
 
         $order->update($request->only(['status', 'payment_status']));
 
         return redirect()->back()->with('success', 'تم تحديث حالة الطلب والدفع بنجاح.');
+    }
+        public function destroy($id)
+    {
+        $order = Order::findOrFail($id);
+        
+        // لو عندك علاقة items يفضل تمسحها الأول عشان تتجنب أخطاء الداتابيز
+        $order->items()->delete(); 
+        
+        $order->delete();
+
+        return back()->with('success', 'تم حذف الطلب بنجاح.');
     }
 }

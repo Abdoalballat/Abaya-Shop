@@ -212,14 +212,39 @@
 
         subtotalDisplay.innerText = subtotal + ' ج.م';
 
+// دالة حساب الأسعار النهائية
         function updateTotals() {
             let shippingCost = 0;
-            if(govSelect.options[govSelect.selectedIndex].value !== "") {
+            
+            // التحقق من اختيار المحافظة لحساب الشحن
+            if (govSelect && govSelect.selectedIndex > 0 && govSelect.value !== "") {
                 shippingCost = parseFloat(govSelect.options[govSelect.selectedIndex].getAttribute('data-price') || 0);
                 shippingDisplay.innerText = shippingCost + ' ج.م';
+            } else {
+                shippingDisplay.innerText = 'سيتم حسابه';
             }
-            totalDisplay.innerText = (subtotal + shippingCost) + ' ج.م';
+
+            // الإجمالي النهائي = المجموع الفرعي + الشحن
+            let finalTotal = subtotal + shippingCost;
+
+            // تحديث النصوص في الصفحة (مع إضافة toLocaleString عشان الفواصل زي 12,405)
+            subtotalDisplay.innerText = subtotal.toLocaleString() + ' ج.م';
+            totalDisplay.innerText = finalTotal.toLocaleString() + ' ج.م';
+
+            // تحديث الرقم اللي في زرار تأكيد الطلب تحت (لو موجود)
+            let footerTotalDisplay = document.getElementById('footer-total-display');
+            if (footerTotalDisplay) {
+                footerTotalDisplay.innerText = finalTotal.toLocaleString() + ' ج.م';
+            }
         }
+
+        // ربط تغيير المحافظة بتحديث الأسعار
+        if (govSelect) {
+            govSelect.addEventListener('change', updateTotals);
+        }
+
+        // استدعاء الدالة فوراً عند فتح الصفحة عشان تعرض الإجمالي حتى قبل اختيار المحافظة
+        updateTotals();
 
         govSelect.addEventListener('change', updateTotals);
         if(govSelect.value) updateTotals(); 
