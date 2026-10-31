@@ -33,8 +33,8 @@
     // الصور: بيدعم العمود url (ImageKit) أو image_path (storage)
     $images = $product->images ?? collect();
     $imgUrl = fn($img) => $img->url ?: ($img->image_path ? asset('storage/' . $img->image_path) : '');
-    $mainImage = $images->firstWhere('is_head', true) ?? $images->first();
-    $selectedMain = old('main_image_id', $mainImage->id ?? null);
+$mainImage = $images->firstWhere('is_main', true) ?? $images->first(); 
+   $selectedMain = old('main_image_id', $mainImage->id ?? null);
 
     // الصفوف (اللون/المقاس/الكمية): من القيم القديمة لو فيه خطأ، وإلا من الداتابيز
     $rows = old('variance') ?: $product->variances->map(fn($v) => [

@@ -384,6 +384,7 @@
                                         <!-- <th class="px-6 py-4">الصورة</th> -->
                                         <th class="px-6 py-4">اسم الموديل</th>
                                         <th class="px-6 py-4">الكود</th>
+                                        <th class="px-6 py-4">مفعل-غير مفعل</th>
                                         <th class="px-6 py-4">القسم</th>
                                         <th class="px-6 py-4">الخامة</th>
                                         <th class="px-6 py-4">السعر</th>
@@ -412,7 +413,13 @@
                                             </td> -->
                                             <td class="px-6 py-3 font-bold text-sm max-w-[220px] truncate" title="{{ $product->name }}">{{ $product->name }}</td>
                                             <td class="px-6 py-3"><span class="font-mono text-[#C2577A] text-sm">#{{ $product->code }}</span></td>
-                                            <td class="px-6 py-3 text-sm text-[#8A6E78]">{{ $product->department->name ?? '—' }}</td>
+<td class="px-6 py-3">
+    @if($product->is_active)
+        <span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">مفعل</span>
+    @else
+        <span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">غير مفعل</span>
+    @endif
+</td>                                            <td class="px-6 py-3 text-sm text-[#8A6E78]">{{ $product->department->name ?? '—' }}</td>
                                             <td class="px-6 py-3 text-sm text-[#8A6E78]">{{ $product->material_type ?: '—' }}</td>
                                             <td class="px-6 py-3 font-bold text-[#C9A36B]">{{ number_format($product->price, 0) }} ج.م</td>
                                             <td class="px-6 py-3">
