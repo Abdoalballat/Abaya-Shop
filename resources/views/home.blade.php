@@ -153,7 +153,7 @@
     </footer>
 
     {{-- واتساب عائم (من غير bounce، ومرفوع فوق شريط الأيفون) --}}
-    <a href="https://wa.me/{{ config('shop.whatsapp', '201023456789') }}?text={{ urlencode('أريد الاستفسار عن موديل') }}"
+    <a href="https://wa.me/{{ config('shop.whatsapp', '201021002218') }}?text={{ urlencode('أريد الاستفسار عن موديل') }}"
        target="_blank" rel="noopener" aria-label="واتساب للاستفسار"
        style="bottom: calc(1.25rem + env(safe-area-inset-bottom));"
        class="fixed left-5 z-[60] w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-xl shadow-[#25D366]/30 active:scale-95 transition-transform">
