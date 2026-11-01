@@ -1,17 +1,32 @@
 <?php
 
-// إنشاء مجلدات التخزين المؤقتة في /tmp
-$storagePath = '/tmp/storage';
-if (!file_exists($storagePath)) {
-    @mkdir($storagePath . '/framework/views', 0755, true);
-    @mkdir($storagePath . '/framework/sessions', 0755, true);
-    @mkdir($storagePath . '/framework/cache', 0755, true);
-    @mkdir($storagePath . '/bootstrap/cache', 0755, true);
-    @mkdir($storagePath . '/logs', 0755, true);
+$tmp = '/tmp/storage';
+
+foreach ([
+    "$tmp/framework/views",
+    "$tmp/framework/sessions",
+    "$tmp/framework/cache/data",
+    "$tmp/bootstrap/cache",
+    "$tmp/logs",
+] as $dir) {
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
 }
 
-// تعيين المسارات للـ Storage والـ Compiled Views في البيئة
-putenv("VIEW_COMPILED_PATH={$storagePath}/framework/views");
-$_ENV['VIEW_COMPILED_PATH'] = "{$storagePath}/framework/views";
+$vars = [
+    'VIEW_COMPILED_PATH' => "$tmp/framework/views",
+    'APP_CONFIG_CACHE'   => "$tmp/bootstrap/cache/config.php",
+    'APP_EVENTS_CACHE'   => "$tmp/bootstrap/cache/events.php",
+    'APP_PACKAGES_CACHE' => "$tmp/bootstrap/cache/packages.php",
+    'APP_ROUTES_CACHE'   => "$tmp/bootstrap/cache/routes.php",
+    'APP_SERVICES_CACHE' => "$tmp/bootstrap/cache/services.php",
+];
+
+foreach ($vars as $key => $value) {
+    putenv("$key=$value");
+    $_ENV[$key] = $value;
+    $_SERVER[$key] = $value;
+}
 
 require __DIR__ . '/../public/index.php';
