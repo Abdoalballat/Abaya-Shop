@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // حل مشكلة الـ HTTPS والـ Logout على Vercel
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckAdminRole::class,
         ]);
@@ -22,9 +25,3 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();
-
-    if (str_starts_with(__DIR__, '/var/task')) {
-    $app->useStoragePath('/tmp/storage');
-}
-
-return $app;
