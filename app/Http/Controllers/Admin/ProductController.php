@@ -84,9 +84,16 @@ public function index()
             }
         }
 
-        // 4. كود حفظ الصورة الرئيسية (باستخدام primary_image)
+// 4. كود حفظ الصورة الرئيسية (باستخدام primary_image)
         if ($request->hasFile('primary_image')) {
-            // كود الرفع الخاص بك هنا
+            // الرفع على ImageKit
+            $uploaded = $this->imageKit->upload($request->file('primary_image'), 'products');
+            
+            // حفظ الرابط في الداتابيز كصورة رئيسية
+            $product->images()->create([
+                'image_path' => $uploaded->url, // بيحفظ الرابط السحابي المباشر
+                'is_main'    => true,
+            ]);
         }
 
         // توجيه الأدمن لنفس القسم مع رسالة نجاح
