@@ -70,7 +70,7 @@ Route::middleware(['auth', 'role:admin'])
             $orders = \App\Models\Order::latest()->take(50)->get();
             $departments = \App\Models\Department::latest()->get();
             $governorates = \App\Models\Governorate::latest()->get();
-            $products = \App\Models\Product::latest()->get();
+            $products = \App\Models\Product::where('is_active', 1)->latest()->get();
             $colors = \App\Models\Color::latest()->get();
             $sizes = \App\Models\Size::latest()->get();
 
