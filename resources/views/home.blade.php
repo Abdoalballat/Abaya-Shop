@@ -145,21 +145,21 @@
     </section>
 
     {{-- الفوتر --}}
-    <footer class="py-8 px-5 bg-[#C2577A] text-white text-center space-y-3 rounded-[20px] mb-24">
-        <h4 class="font-heading text-xl">عبايات المصطفى</h4>
-        <p class="text-xs opacity-80 leading-relaxed">
-            جميع الحقوق محفوظة © {{ date('Y') }}<br>أناقة الخليج بلمسة مصرية
-        </p>
-    </footer>
-
-<a href="https://wa.me/201021002218?text={{ urlencode('أريد الاستفسار عن موديل') }}"
-   target="_blank" rel="noopener" aria-label="واتساب للاستفسار"
-   style="bottom: calc(1.25rem + env(safe-area-inset-bottom));"
-   class="fixed left-5 z-[60] w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-xl shadow-[#25D366]/30 active:scale-95 transition-transform">
+    
+    <a href="https://wa.me/201021002218?text={{ urlencode('أريد الاستفسار عن موديل') }}"
+    target="_blank" rel="noopener" aria-label="واتساب للاستفسار"
+    style="bottom: calc(1.25rem + env(safe-area-inset-bottom));"
+    class="fixed left-5 z-[60] w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-xl shadow-[#25D366]/30 active:scale-95 transition-transform">
     <iconify-icon icon="logos:whatsapp-icon" width="28"></iconify-icon>
 </a>
 @endsection
 
+<footer class="py-8 px-5 bg-[#C2577A] text-white text-center space-y-3 rounded-[20px] mb-24">
+    <h4 class="font-heading text-xl">عبايات المصطفى</h4>
+    <p class="text-xs opacity-80 leading-relaxed">
+        جميع الحقوق محفوظة © {{ date('Y') }}<br>أناقة الخليج بلمسة مصرية
+    </p>
+</footer>
 @push('scripts')
 <script>
     // يوصّل القسم النشط لنص الشاشة في شريط الأقسام
