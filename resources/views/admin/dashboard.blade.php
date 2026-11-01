@@ -420,7 +420,7 @@
         <span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">غير مفعل</span>
     @endif
 </td>                                            <td class="px-6 py-3 text-sm text-[#8A6E78]">{{ $product->department->name ?? '—' }}</td>
-                                            <td class="px-6 py-3 text-sm text-[#8A6E78]">{{ $product->material_type ?: '—' }}</td>
+                                            <td class="px-6 py-3 text-sm text-[#8A6E78]">{{ $product->material_type ?: 'x' }}</td>
                                             <td class="px-6 py-3 font-bold text-[#C9A36B]">{{ number_format($product->price, 0) }} ج.م</td>
                                             <td class="px-6 py-3">
                                                 <div class="flex gap-1 flex-wrap max-w-[120px]">
