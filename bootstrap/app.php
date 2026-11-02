@@ -20,8 +20,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckAdminRole::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
-        );
-    })->create();
+   ->withExceptions(function (Exceptions $exceptions) {
+    $exceptions->render(function (\Throwable $e, $request) {
+        if ($request->is('admin*')) {
+            return response(
+                get_class($e) . "\n" . $e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine(),
+                500,
+                ['Content-Type' => 'text/plain; charset=utf-8']
+            );
+        }
+    });
+})->create();
