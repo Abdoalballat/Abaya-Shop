@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
+        use SoftDeletes;
+
     protected $fillable = [
         'department_id', 'code', 'name', 
         'description', 'material_type', 'price', 'is_active'
@@ -13,7 +16,7 @@ class Product extends Model
 
     public function department()
     {
-        return $this->belongsTo(Department::class);
+        return $this->belongsTo(Department::class)->withTrashed();
     }
 
 public function images()

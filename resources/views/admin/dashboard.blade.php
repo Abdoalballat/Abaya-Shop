@@ -235,132 +235,132 @@
                 <!-- 3. قسم إضافة موديل جديد -->
                 <!-- ============================================== -->
                 <section id="add-product-section" class="tab-content hidden">
-                    <div class="bg-white rounded-[20px] custom-shadow border border-[#F0D9DF] p-8">
-                        <h3 class="text-lg font-bold font-heading mb-6 border-b border-[#F0D9DF] pb-4">إضافة موديل جديد</h3>
-                        <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            @csrf
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="text-xs font-bold text-[#8A6E78] mb-2 block">اسم الموديل</label>
-                                    <input type="text" name="name" required placeholder="مثال: عباية ملكي كريب">
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="text-xs font-bold text-[#8A6E78] mb-2 block">كود الموديل</label>
-                                        <input type="text" name="code" required placeholder="مثال: 909">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-bold text-[#8A6E78] mb-2 block">السعر (ج.م)</label>
-                                        <input type="number" name="price" required placeholder="950">
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="text-xs font-bold text-[#8A6E78] mb-2 block">التصنيف</label>
-                                        <select name="department_id" required>
-                                            <option value="" disabled selected>اختاري التصنيف...</option>
-                                            @if(isset($departments))
-                                                @foreach($departments as $dept)
-                                                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
-                                                @endforeach
-                                            @endif
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-bold text-[#8A6E78] mb-2 block">نوع الخامة</label>
-                                        <input type="text" name="material" placeholder="كريب كوري فاخر">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="text-xs font-bold text-[#8A6E78] mb-2 block">الوصف</label>
-                                    <textarea name="description" rows="4" placeholder="اكتبي وصف الموديل هنا..."></textarea>
-                                </div>
-                                
-                                <!-- قسم الألوان والمقاسات والكميات -->
-                                <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
-                                    <label class="text-sm font-bold text-[#C2577A] block mb-4 flex items-center gap-2">
-                                        <iconify-icon icon="lucide:layers"></iconify-icon> الألوان، المقاسات والكميات
-                                    </label>
-                                    
-                                    <div id="variances-container" class="space-y-4">
-                                        <!-- الصف الأول (الأساسي) -->
-                                        <div class="variance-row flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-xl border border-[#F0D9DF] shadow-sm">
-                                            
-                                            <!-- اختيار اللون -->
-                                            <div class="flex-1 min-w-[120px]">
-                                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">اللون</label>
-                                                <select name="variances[0][color_id]" required class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg focus:border-[#C2577A] outline-none">
-                                                    <option value="" disabled selected>اختر اللون...</option>
-                                                    @if(isset($colors))
-                                                        @foreach($colors as $color)
-                                                            <option value="{{ $color->id }}">{{ $color->name }}</option>
-                                                        @endforeach
-                                                    @endif
-                                                </select>
-                                            </div>
-                                            
-                                            <!-- اختيار المقاس -->
-                                            <div class="flex-1 min-w-[120px]">
-                                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">المقاس</label>
-                                                <select name="variances[0][size_id]" required class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg focus:border-[#C2577A] outline-none">
-                                                    <option value="" disabled selected>اختر المقاس...</option>
-                                                    @if(isset($sizes))
-                                                        @foreach($sizes as $size)
-                                                            <option value="{{ $size->id }}">{{ $size->name }}</option>
-                                                        @endforeach
-                                                    @endif
-                                                </select>
-                                            </div>
-                                            
-                                            <!-- إدخال الكمية -->
-                                            <div class="w-24">
-                                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">الكمية</label>
-                                                <input type="number" name="variances[0][stock]" required min="0" placeholder="0" class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg text-center focus:border-[#C2577A] outline-none">
-                                            </div>
-                                            
-                                            <!-- زر الحذف -->
-                                            <div class="w-10 flex justify-center mt-5">
-                                                <button type="button" onclick="removeVarianceRow(this)" class="remove-variance-btn hidden p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="حذف هذا الصف">
-                                                    <iconify-icon icon="lucide:trash-2" width="20"></iconify-icon>
-                                                </button>
-                                            </div>
-                                            
-                                        </div>
-                                    </div>
-                                    
-                                    <button type="button" onclick="addVarianceRow()" class="mt-4 flex items-center gap-2 text-sm font-bold text-[#C2577A] hover:text-[#A9456A] transition-colors">
-                                        <iconify-icon icon="lucide:plus-circle" width="18"></iconify-icon>
-                                        إضافة لون أو مقاس آخر
-                                    </button>
-                                </div>
+    <div class="bg-white rounded-[20px] custom-shadow border border-[#F0D9DF] p-8">
+        <h3 class="text-lg font-bold font-heading mb-6 border-b border-[#F0D9DF] pb-4">إضافة موديل جديد</h3>
+        <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            @csrf
+            <div class="space-y-6">
+                <div>
+                    <label class="text-xs font-bold text-[#8A6E78] mb-2 block">اسم الموديل</label>
+                    <input type="text" name="name" required placeholder="مثال: عباية ملكي كريب">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-[#8A6E78] mb-2 block">كود الموديل</label>
+                        <input type="text" name="code" required placeholder="مثال: 909">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-[#8A6E78] mb-2 block">السعر (ج.م)</label>
+                        <input type="number" name="price" required placeholder="950">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-[#8A6E78] mb-2 block">التصنيف</label>
+                        <select name="department_id" required>
+                            <option value="" disabled selected>اختاري التصنيف...</option>
+                            @if(isset($departments))
+                                @foreach($departments as $dept)
+                                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-[#8A6E78] mb-2 block">نوع الخامة</label>
+                        <input type="text" name="material" placeholder="كريب كوري فاخر">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-[#8A6E78] mb-2 block">الوصف</label>
+                    <textarea name="description" rows="4" placeholder="اكتبي وصف الموديل هنا..."></textarea>
+                </div>
+                
+                <!-- قسم الألوان والمقاسات والكميات -->
+                <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
+                    <label class="text-sm font-bold text-[#C2577A] block mb-4 flex items-center gap-2">
+                        <iconify-icon icon="lucide:layers"></iconify-icon> المقاسات، الألوان والكميات
+                    </label>
+                    
+                    <div id="variances-container" class="space-y-4">
+                        <!-- الصف الأول (الأساسي) -->
+                        <div class="variance-row flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-xl border border-[#F0D9DF] shadow-sm">
+                            
+                            <!-- اختيار المقاس (تم نقله للأول) -->
+                            <div class="flex-1 min-w-[120px]">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">المقاس</label>
+                                <select name="variances[0][size_id]" required class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg focus:border-[#C2577A] outline-none">
+                                    <option value="" disabled selected>اختر المقاس...</option>
+                                    @if(isset($sizes))
+                                        @foreach($sizes as $size)
+                                            <option value="{{ $size->id }}">{{ $size->name }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+
+                            <!-- اختيار اللون (تم نقله للثاني) -->
+                            <div class="flex-1 min-w-[120px]">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">اللون</label>
+                                <select name="variances[0][color_id]" required class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg focus:border-[#C2577A] outline-none">
+                                    <option value="" disabled selected>اختر اللون...</option>
+                                    @if(isset($colors))
+                                        @foreach($colors as $color)
+                                            <option value="{{ $color->id }}">{{ $color->name }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
                             </div>
                             
-                            <div class="space-y-6">
-                                <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
-                                    <h4 class="text-sm font-bold text-[#C2577A] mb-2 flex items-center gap-2"><iconify-icon icon="lucide:image"></iconify-icon> الصورة الرئيسية</h4>
-                                    <input type="file" name="primary_image" id="primary_image" accept="image/*" required class="hidden" onchange="previewImage(this, 'primary-preview')">
-                                    <label for="primary_image" class="cursor-pointer block w-full aspect-[4/3] bg-white border-2 border-dashed border-[#C2577A]/50 rounded-[14px] flex flex-col items-center justify-center hover:bg-[#FDEEF0] transition-colors relative overflow-hidden">
-                                        <div id="primary-preview-text" class="flex flex-col items-center text-[#C2577A]">
-                                            <iconify-icon icon="lucide:upload-cloud" width="32"></iconify-icon><span class="text-xs font-bold mt-2">اختيار صورة الهيد</span>
-                                        </div>
-                                        <img id="primary-preview" class="absolute inset-0 w-full h-full object-cover hidden">
-                                    </label>
-                                </div>
-                                <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
-                                    <h4 class="text-sm font-bold text-[#3B2530] mb-2 flex items-center gap-2"><iconify-icon icon="lucide:images"></iconify-icon> صور إضافية</h4>
-                                    <input type="file" name="additional_images[]" id="additional_images" accept="image/*" multiple class="hidden" onchange="updateFilesCount(this)">
-                                    <label for="additional_images" class="cursor-pointer block w-full py-8 bg-white border-2 border-dashed border-[#F0D9DF] rounded-[14px] flex flex-col items-center justify-center hover:bg-[#FDEEF0] transition-colors">
-                                        <iconify-icon icon="lucide:plus-circle" width="28" class="text-[#8A6E78]"></iconify-icon>
-                                        <span class="text-xs font-bold mt-2 text-[#8A6E78]" id="additional-files-text">تحديد صور إضافية (0)</span>
-                                    </label>
-                                </div>
-                                <div class="flex justify-end gap-4 mt-8 pt-4 border-t border-[#F0D9DF]">
-                                    <button type="submit" class="px-10 py-3 bg-[#C2577A] text-white rounded-[14px] font-bold shadow-lg shadow-[#C2577A]/20 hover:bg-[#A9456A]">حفظ ونشر الموديل</button>
-                                </div>
+                            <!-- إدخال الكمية -->
+                            <div class="w-24">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">الكمية</label>
+                                <input type="number" name="variances[0][stock]" required min="0" placeholder="0" class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg text-center focus:border-[#C2577A] outline-none">
                             </div>
-                        </form>
+                            
+                            <!-- زر الحذف -->
+                            <div class="w-10 flex justify-center mt-5">
+                                <button type="button" onclick="removeVarianceRow(this)" class="remove-variance-btn hidden p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="حذف هذا الصف">
+                                    <iconify-icon icon="lucide:trash-2" width="20"></iconify-icon>
+                                </button>
+                            </div>
+                            
+                        </div>
                     </div>
-                </section>
+                    
+                    <button type="button" onclick="addVarianceRow()" class="mt-4 flex items-center gap-2 text-sm font-bold text-[#C2577A] hover:text-[#A9456A] transition-colors">
+                        <iconify-icon icon="lucide:plus-circle" width="18"></iconify-icon>
+                        إضافة مقاس أو لون آخر
+                    </button>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
+                    <h4 class="text-sm font-bold text-[#C2577A] mb-2 flex items-center gap-2"><iconify-icon icon="lucide:image"></iconify-icon> الصورة الرئيسية</h4>
+                    <input type="file" name="primary_image" id="primary_image" accept="image/*" required class="hidden" onchange="previewImage(this, 'primary-preview')">
+                    <label for="primary_image" class="cursor-pointer block w-full aspect-[4/3] bg-white border-2 border-dashed border-[#C2577A]/50 rounded-[14px] flex flex-col items-center justify-center hover:bg-[#FDEEF0] transition-colors relative overflow-hidden">
+                        <div id="primary-preview-text" class="flex flex-col items-center text-[#C2577A]">
+                            <iconify-icon icon="lucide:upload-cloud" width="32"></iconify-icon><span class="text-xs font-bold mt-2">اختيار صورة الهيد</span>
+                        </div>
+                        <img id="primary-preview" class="absolute inset-0 w-full h-full object-cover hidden">
+                    </label>
+                </div>
+                <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
+                    <h4 class="text-sm font-bold text-[#3B2530] mb-2 flex items-center gap-2"><iconify-icon icon="lucide:images"></iconify-icon> صور إضافية</h4>
+                    <input type="file" name="additional_images[]" id="additional_images" accept="image/*" multiple class="hidden" onchange="updateFilesCount(this)">
+                    <label for="additional_images" class="cursor-pointer block w-full py-8 bg-white border-2 border-dashed border-[#F0D9DF] rounded-[14px] flex flex-col items-center justify-center hover:bg-[#FDEEF0] transition-colors">
+                        <iconify-icon icon="lucide:plus-circle" width="28" class="text-[#8A6E78]"></iconify-icon>
+                        <span class="text-xs font-bold mt-2 text-[#8A6E78]" id="additional-files-text">تحديد صور إضافية (0)</span>
+                    </label>
+                </div>
+                <div class="flex justify-end gap-4 mt-8 pt-4 border-t border-[#F0D9DF]">
+                    <button type="submit" class="px-10 py-3 bg-[#C2577A] text-white rounded-[14px] font-bold shadow-lg shadow-[#C2577A]/20 hover:bg-[#A9456A]">حفظ ونشر الموديل</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
 
                 <!-- ============================================== -->
                 <!-- 3.1 قسم الموديلات (عرض / تعديل / حذف) -->
@@ -685,39 +685,32 @@
 
     <!-- كود الجافاسكريبت للتبديل بين الأقسام ومعاينة الصور -->
     <script>
-        let varianceIndex = 1;
+        let varianceIndex = {{ $nextIndex }};
 
-        // دالة إضافة صف جديد للألوان والمقاسات
-        function addVarianceRow() {
-            const container = document.getElementById('variances-container');
-            // نسخ الصف الأول
-            const firstRow = container.querySelector('.variance-row');
-            const newRow = firstRow.cloneNode(true);
-            
-            // تحديث الـ name attribute لكل المدخلات (مثال: variances[1][color_id])
-            newRow.querySelectorAll('select, input').forEach(input => {
-                input.name = input.name.replace(/\[\d+\]/, '[' + varianceIndex + ']');
-                // تصفير القيم المنسوخة
-                if (input.tagName === 'INPUT') input.value = '';
-                if (input.tagName === 'SELECT') input.selectedIndex = 0;
-            });
-            
-            // إظهار زر الحذف للصف الجديد
-            newRow.querySelector('.remove-variance-btn').classList.remove('hidden');
-            
-            container.appendChild(newRow);
-            varianceIndex++;
-        }
+    function addVarianceRow() {
+        const container = document.getElementById('variances-container');
+        const firstRow = container.querySelector('.variance-row');
+        
+        // استنساخ أول صف
+        const newRow = firstRow.cloneNode(true);
 
-        // دالة حذف صف
-        function removeVarianceRow(button) {
-            const row = button.closest('.variance-row');
-            const container = document.getElementById('variances-container');
-            // التأكد من عدم حذف الصف الأخير
-            if (container.querySelectorAll('.variance-row').length > 1) {
-                row.remove();
-            }
+        // تحديث أسماء الحقول والاتريبيوتس للـ Index الجديد
+        newRow.querySelectorAll('select, input').forEach(el => {
+            el.name = el.name.replace(/\[\d+\]/, '[' + varianceIndex + ']');
+            if (el.tagName === 'INPUT') el.value = '';
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        });
+
+        container.appendChild(newRow);
+        varianceIndex++;
+    }
+
+    function removeVarianceRow(button) {
+        const container = document.getElementById('variances-container');
+        if (container.querySelectorAll('.variance-row').length > 1) {
+            button.closest('.variance-row').remove();
         }
+    }
 
         function switchTab(tabId, element) {
             // إخفاء كل المحتوى

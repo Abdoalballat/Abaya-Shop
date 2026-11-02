@@ -16,6 +16,7 @@ Schema::create('governorates', function (Blueprint $table) {
     $table->string('name');
     $table->decimal('shipping_cost', 8, 2);
     $table->string('estimated_time')->nullable();
+    $table->softDeletes();
     $table->timestamps();
 });
     }

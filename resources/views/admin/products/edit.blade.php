@@ -119,24 +119,17 @@ $mainImage = $images->firstWhere('is_main', true) ?? $images->first();
             </label>
 
             {{-- الألوان والمقاسات والكميات --}}
+            {{-- الألوان والمقاسات والكميات --}}
             <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
                 <label class="text-sm font-bold text-[#C2577A] mb-4 flex items-center gap-2">
-                    <iconify-icon icon="lucide:layers"></iconify-icon> الألوان، المقاسات والكميات
+                    <iconify-icon icon="lucide:layers"></iconify-icon> المقاسات، الألوان والكميات
                 </label>
 
                 <div id="variances-container" class="space-y-4">
                     @foreach($rows as $i => $row)
                         <div class="variance-row flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-xl border border-[#F0D9DF] shadow-sm">
-                            <div class="flex-1 min-w-[120px]">
-                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">اللون</label>
-                                <select name="variance[{{ $i }}][color_id]" required class="{{ $smallCls }}">
-                                    <option value="" disabled {{ empty($row['color_id']) ? 'selected' : '' }}>اختر اللون...</option>
-                                    @foreach($colors as $color)
-                                        <option value="{{ $color->id }}" {{ (string) ($row['color_id'] ?? '') === (string) $color->id ? 'selected' : '' }}>{{ $color->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
+                            
+                            {{-- 1. اختيار المقاس (بقى الأول) --}}
                             <div class="flex-1 min-w-[120px]">
                                 <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">المقاس</label>
                                 <select name="variance[{{ $i }}][size_id]" required class="{{ $smallCls }}">
@@ -147,11 +140,24 @@ $mainImage = $images->firstWhere('is_main', true) ?? $images->first();
                                 </select>
                             </div>
 
+                            {{-- 2. اختيار اللون (بقى الثاني) --}}
+                            <div class="flex-1 min-w-[120px]">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">اللون</label>
+                                <select name="variance[{{ $i }}][color_id]" required class="{{ $smallCls }}">
+                                    <option value="" disabled {{ empty($row['color_id']) ? 'selected' : '' }}>اختر اللون...</option>
+                                    @foreach($colors as $color)
+                                        <option value="{{ $color->id }}" {{ (string) ($row['color_id'] ?? '') === (string) $color->id ? 'selected' : '' }}>{{ $color->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- 3. إدخال الكمية --}}
                             <div class="w-24">
                                 <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">الكمية</label>
                                 <input type="number" name="variance[{{ $i }}][stock]" required min="0" placeholder="0" value="{{ $row['stock'] ?? '' }}" class="{{ $smallCls }} text-center">
                             </div>
 
+                            {{-- 4. زر الحذف --}}
                             <div class="w-10 flex justify-center mt-5">
                                 <button type="button" onclick="removeVarianceRow(this)" class="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="حذف هذا الصف">
                                     <iconify-icon icon="lucide:trash-2" width="20"></iconify-icon>
@@ -163,7 +169,7 @@ $mainImage = $images->firstWhere('is_main', true) ?? $images->first();
 
                 <button type="button" onclick="addVarianceRow()" class="mt-4 flex items-center gap-2 text-sm font-bold text-[#C2577A] hover:text-[#A9456A] transition-colors">
                     <iconify-icon icon="lucide:plus-circle" width="18"></iconify-icon>
-                    إضافة لون أو مقاس آخر
+                    إضافة مقاس أو لون آخر
                 </button>
             </div>
         </div>
@@ -245,8 +251,12 @@ $mainImage = $images->firstWhere('is_main', true) ?? $images->first();
 
     function addVarianceRow() {
         const container = document.getElementById('variances-container');
-        const newRow = container.querySelector('.variance-row').cloneNode(true);
+        const firstRow = container.querySelector('.variance-row');
+        
+        // استنساخ أول صف
+        const newRow = firstRow.cloneNode(true);
 
+        // تحديث أسماء الحقول والاتريبيوتس للـ Index الجديد
         newRow.querySelectorAll('select, input').forEach(el => {
             el.name = el.name.replace(/\[\d+\]/, '[' + varianceIndex + ']');
             if (el.tagName === 'INPUT') el.value = '';

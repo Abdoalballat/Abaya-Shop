@@ -20,7 +20,7 @@ protected $fillable = [
 
     public function governorate()
     {
-        return $this->belongsTo(Governorate::class);
+        return $this->belongsTo(Governorate::class)->withTrashed();
     }
 
     public function items()
