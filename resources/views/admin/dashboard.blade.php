@@ -268,15 +268,71 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-[#8A6E78] mb-2 block">نوع الخامة</label>
-                        <input type="text" name="material_type" placeholder="قطن">
+                        <input type="text" name="material" placeholder="كريب كوري فاخر">
                     </div>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-[#8A6E78] mb-2 block">الوصف</label>
                     <textarea name="description" rows="4" placeholder="اكتبي وصف الموديل هنا..."></textarea>
                 </div>
-                @include('admin.products._variants-picker', ['colors' => $colors, 'sizes' => $sizes])
+                
                 <!-- قسم الألوان والمقاسات والكميات -->
+                <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
+                    <label class="text-sm font-bold text-[#C2577A] block mb-4 flex items-center gap-2">
+                        <iconify-icon icon="lucide:layers"></iconify-icon> المقاسات، الألوان والكميات
+                    </label>
+                    
+                    <div id="variances-container" class="space-y-4">
+                        <!-- الصف الأول (الأساسي) -->
+                        <div class="variance-row flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-xl border border-[#F0D9DF] shadow-sm">
+                            
+                            <!-- اختيار المقاس (تم نقله للأول) -->
+                            <div class="flex-1 min-w-[120px]">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">المقاس</label>
+                                <select name="variances[0][size_id]" required class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg focus:border-[#C2577A] outline-none">
+                                    <option value="" disabled selected>اختر المقاس...</option>
+                                    @if(isset($sizes))
+                                        @foreach($sizes as $size)
+                                            <option value="{{ $size->id }}">{{ $size->name }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+
+                            <!-- اختيار اللون (تم نقله للثاني) -->
+                            <div class="flex-1 min-w-[120px]">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">اللون</label>
+                                <select name="variances[0][color_id]" required class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg focus:border-[#C2577A] outline-none">
+                                    <option value="" disabled selected>اختر اللون...</option>
+                                    @if(isset($colors))
+                                        @foreach($colors as $color)
+                                            <option value="{{ $color->id }}">{{ $color->name }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+                            
+                            <!-- إدخال الكمية -->
+                            <div class="w-24">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">الكمية</label>
+                                <input type="number" name="variances[0][stock]" required min="0" placeholder="0" class="w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg text-center focus:border-[#C2577A] outline-none">
+                            </div>
+                            
+                            <!-- زر الحذف -->
+                            <div class="w-10 flex justify-center mt-5">
+                                <button type="button" onclick="removeVarianceRow(this)" class="remove-variance-btn hidden p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="حذف هذا الصف">
+                                    <iconify-icon icon="lucide:trash-2" width="20"></iconify-icon>
+                                </button>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="addVarianceRow()" class="mt-4 flex items-center gap-2 text-sm font-bold text-[#C2577A] hover:text-[#A9456A] transition-colors">
+                        <iconify-icon icon="lucide:plus-circle" width="18"></iconify-icon>
+                        إضافة مقاس أو لون آخر
+                    </button>
+                </div>
             </div>
             
             <div class="space-y-6">
@@ -631,7 +687,30 @@
     <script>
         let varianceIndex = {{ $nextIndex }};
 
-    
+    function addVarianceRow() {
+        const container = document.getElementById('variances-container');
+        const firstRow = container.querySelector('.variance-row');
+        
+        // استنساخ أول صف
+        const newRow = firstRow.cloneNode(true);
+
+        // تحديث أسماء الحقول والاتريبيوتس للـ Index الجديد
+        newRow.querySelectorAll('select, input').forEach(el => {
+            el.name = el.name.replace(/\[\d+\]/, '[' + varianceIndex + ']');
+            if (el.tagName === 'INPUT') el.value = '';
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        });
+
+        container.appendChild(newRow);
+        varianceIndex++;
+    }
+
+    function removeVarianceRow(button) {
+        const container = document.getElementById('variances-container');
+        if (container.querySelectorAll('.variance-row').length > 1) {
+            button.closest('.variance-row').remove();
+        }
+    }
 
         function switchTab(tabId, element) {
             // إخفاء كل المحتوى

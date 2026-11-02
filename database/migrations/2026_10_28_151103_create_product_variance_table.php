@@ -13,10 +13,10 @@ return new class extends Migration
     {
 Schema::create('product_variants', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('product_id')->unique()->constrained()->cascadeOnDelete();
-    $table->foreignId('color_id')->unique()->constrained()->restrictOnDelete();
-    $table->foreignId('size_id')->unique()->constrained()->restrictOnDelete();
-    $table->integer('stock')->nullable(); // المخزون الفعلي هنا فقط
+    $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+    $table->foreignId('color_id')->constrained()->restrictOnDelete();
+    $table->foreignId('size_id')->constrained()->restrictOnDelete();
+    $table->integer('stock')->default(0); // المخزون الفعلي هنا فقط
     $table->timestamps();
 });
     }

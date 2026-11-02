@@ -16,23 +16,36 @@
 </head>
 <body>
 
-<header class="h-16 bg-white border-b border-[#F0D9DF] px-4 md:px-8 flex items-center justify-between sticky top-0 z-40">
-    <h2 class="text-base md:text-xl font-bold font-heading text-[#C2577A]">عبايات المصطفى — تعديل بيانات الموديل</h2>
+<header class="h-16 bg-white border-b border-[#F0D9DF] px-8 flex items-center justify-between sticky top-0 z-40">
+    <h2 class="text-xl font-bold font-heading text-[#C2577A]">عبايات المصطفى — تعديل بيانات الموديل</h2>
     <a href="{{ route('admin.dashboard') }}#products-section" class="flex items-center gap-2 text-sm font-bold text-[#8A6E78] hover:text-[#C2577A] transition-colors">
         <iconify-icon icon="lucide:arrow-right" width="18"></iconify-icon>
         رجوع للوحة التحكم
     </a>
 </header>
 
-<main class="p-4 md:p-8 max-w-6xl mx-auto">
+<main class="p-8 max-w-6xl mx-auto">
 @php
+    // كلاس موحد للمدخلات (نفس شكل صفحة الإضافة)
     $inputCls = 'w-full px-4 py-3 rounded-[14px] border border-[#F0D9DF] bg-[#FFF7F5] focus:bg-white focus:border-[#C2577A] focus:ring-4 focus:ring-[#C2577A]/10 outline-none transition-all';
+    $smallCls = 'w-full bg-[#FFF7F5] border border-[#F0D9DF] text-[#3B2530] text-sm p-2.5 rounded-lg focus:border-[#C2577A] outline-none';
 
-    // الصور (ImageKit): url() دالة في الـ model وبتقبل تحويل
-    $images    = $product->images ?? collect();
-    $imgUrl    = fn ($img, $t = 'w-500,q-80,f-auto') => $img->url($t);
-    $mainImage = $images->firstWhere('is_main', true) ?? $images->first();
-    $selectedMain = old('main_image_id', $mainImage->id ?? null);
+    // الصور: بيدعم العمود url (ImageKit) أو image_path (storage)
+    $images = $product->images ?? collect();
+    $imgUrl = fn($img) => $img->url ?: ($img->image_path ? asset('storage/' . $img->image_path) : '');
+$mainImage = $images->firstWhere('is_main', true) ?? $images->first(); 
+   $selectedMain = old('main_image_id', $mainImage->id ?? null);
+
+    // الصفوف (اللون/المقاس/الكمية): من القيم القديمة لو فيه خطأ، وإلا من الداتابيز
+    $rows = old('variance') ?: $product->variances->map(fn($v) => [
+        'color_id' => $v->color_id,
+        'size_id'  => $v->size_id,
+        'stock'    => $v->stock,
+    ])->values()->all();
+    if (empty($rows)) {
+        $rows = [['color_id' => '', 'size_id' => '', 'stock' => '']];
+    }
+    $nextIndex = max(array_map('intval', array_keys($rows))) + 1;
 
     // حالة "منشور": لو فيه old input نقرأ من الـ checkbox، وإلا من الداتابيز
     $isActive = !empty(old()) ? old('is_active') !== null : (bool) $product->is_active;
@@ -49,7 +62,7 @@
     </div>
 @endif
 
-<section class="bg-white rounded-[20px] custom-shadow border border-[#F0D9DF] p-4 md:p-8">
+<section class="bg-white rounded-[20px] custom-shadow border border-[#F0D9DF] p-8">
     <h3 class="text-lg font-bold font-heading mb-6 border-b border-[#F0D9DF] pb-4 text-[#3B2530]">
         تعديل: {{ $product->name }}
     </h3>
@@ -105,14 +118,60 @@
                 <span class="text-sm font-bold text-[#3B2530]">الموديل ظاهر في المتجر</span>
             </label>
 
-            {{-- الألوان والمقاسات والكمية (Partial مشترك مع صفحة الإضافة) --}}
-            @include('admin.products._variants-picker', [
-                'colors'         => $colors,
-                'sizes'          => $sizes,
-                'selectedColors' => $product->variances->pluck('color_id')->unique()->values()->all(),
-                'selectedSizes'  => $product->variances->pluck('size_id')->unique()->values()->all(),
-                'stock'          => $product->stock,
-            ])
+            {{-- الألوان والمقاسات والكميات --}}
+            {{-- الألوان والمقاسات والكميات --}}
+            <div class="bg-[#FFF7F5] p-5 rounded-[20px] border border-[#F0D9DF]">
+                <label class="text-sm font-bold text-[#C2577A] mb-4 flex items-center gap-2">
+                    <iconify-icon icon="lucide:layers"></iconify-icon> المقاسات، الألوان والكميات
+                </label>
+
+                <div id="variances-container" class="space-y-4">
+                    @foreach($rows as $i => $row)
+                        <div class="variance-row flex flex-wrap md:flex-nowrap items-center gap-4 bg-white p-4 rounded-xl border border-[#F0D9DF] shadow-sm">
+                            
+                            {{-- 1. اختيار المقاس (بقى الأول) --}}
+                            <div class="flex-1 min-w-[120px]">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">المقاس</label>
+                                <select name="variance[{{ $i }}][size_id]" required class="{{ $smallCls }}">
+                                    <option value="" disabled {{ empty($row['size_id']) ? 'selected' : '' }}>اختر المقاس...</option>
+                                    @foreach($sizes as $size)
+                                        <option value="{{ $size->id }}" {{ (string) ($row['size_id'] ?? '') === (string) $size->id ? 'selected' : '' }}>{{ $size->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- 2. اختيار اللون (بقى الثاني) --}}
+                            <div class="flex-1 min-w-[120px]">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">اللون</label>
+                                <select name="variance[{{ $i }}][color_id]" required class="{{ $smallCls }}">
+                                    <option value="" disabled {{ empty($row['color_id']) ? 'selected' : '' }}>اختر اللون...</option>
+                                    @foreach($colors as $color)
+                                        <option value="{{ $color->id }}" {{ (string) ($row['color_id'] ?? '') === (string) $color->id ? 'selected' : '' }}>{{ $color->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- 3. إدخال الكمية --}}
+                            <div class="w-24">
+                                <label class="text-[10px] font-bold text-[#8A6E78] mb-1.5 block">الكمية</label>
+                                <input type="number" name="variance[{{ $i }}][stock]" required min="0" placeholder="0" value="{{ $row['stock'] ?? '' }}" class="{{ $smallCls }} text-center">
+                            </div>
+
+                            {{-- 4. زر الحذف --}}
+                            <div class="w-10 flex justify-center mt-5">
+                                <button type="button" onclick="removeVarianceRow(this)" class="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="حذف هذا الصف">
+                                    <iconify-icon icon="lucide:trash-2" width="20"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <button type="button" onclick="addVarianceRow()" class="mt-4 flex items-center gap-2 text-sm font-bold text-[#C2577A] hover:text-[#A9456A] transition-colors">
+                    <iconify-icon icon="lucide:plus-circle" width="18"></iconify-icon>
+                    إضافة مقاس أو لون آخر
+                </button>
+            </div>
         </div>
 
         {{-- ===================== العمود الثاني: الصور ===================== --}}
@@ -123,8 +182,7 @@
                     <iconify-icon icon="lucide:image"></iconify-icon> الصورة الرئيسية
                 </h4>
                 <div class="relative w-full aspect-[4/3] bg-white border-2 border-dashed border-[#C2577A]/50 rounded-[14px] overflow-hidden flex items-center justify-center">
-                    <img id="main-preview" src="{{ $mainImage ? $imgUrl($mainImage, 'w-900,q-85,f-auto') : '' }}" alt="الصورة الرئيسية"
-                         class="absolute inset-0 w-full h-full object-cover object-top {{ $mainImage ? '' : 'hidden' }}">
+                    <img id="main-preview" src="{{ $mainImage ? $imgUrl($mainImage) : '' }}" alt="الصورة الرئيسية" class="absolute inset-0 w-full h-full object-cover object-top {{ $mainImage ? '' : 'hidden' }}">
                     <div id="main-preview-empty" class="flex flex-col items-center text-[#C2577A] {{ $mainImage ? 'hidden' : '' }}">
                         <iconify-icon icon="lucide:image-off" width="32"></iconify-icon>
                         <span class="text-xs font-bold mt-2">لا توجد صور للموديل</span>
@@ -146,10 +204,9 @@
                         @foreach($images as $image)
                             <div class="relative aspect-[3/4] rounded-[14px] overflow-hidden border border-[#F0D9DF] bg-white">
                                 <label class="block w-full h-full cursor-pointer">
-                                    <input type="radio" name="main_image_id" value="{{ $image->id }}"
-                                           data-url="{{ $imgUrl($image, 'w-900,q-85,f-auto') }}"
-                                           class="peer hidden gallery-radio" {{ (string) $selectedMain === (string) $image->id ? 'checked' : '' }}>
-                                    <img src="{{ $imgUrl($image, 'w-300,q-75,f-auto') }}" alt="" loading="lazy" class="w-full h-full object-cover object-top">
+                                    <input type="radio" name="main_image_id" value="{{ $image->id }}" data-url="{{ $imgUrl($image) }}"
+                                        class="peer hidden gallery-radio" {{ (string) $selectedMain === (string) $image->id ? 'checked' : '' }}>
+                                    <img src="{{ $imgUrl($image) }}" alt="" loading="lazy" class="w-full h-full object-cover object-top">
                                     <span class="absolute inset-0 ring-4 ring-inset ring-[#C2577A] rounded-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"></span>
                                     <span class="absolute bottom-1.5 right-1.5 bg-[#C2577A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden peer-checked:block">رئيسية</span>
                                 </label>
@@ -190,6 +247,33 @@
 </section>
 
 <script>
+    let varianceIndex = {{ $nextIndex }};
+
+    function addVarianceRow() {
+        const container = document.getElementById('variances-container');
+        const firstRow = container.querySelector('.variance-row');
+        
+        // استنساخ أول صف
+        const newRow = firstRow.cloneNode(true);
+
+        // تحديث أسماء الحقول والاتريبيوتس للـ Index الجديد
+        newRow.querySelectorAll('select, input').forEach(el => {
+            el.name = el.name.replace(/\[\d+\]/, '[' + varianceIndex + ']');
+            if (el.tagName === 'INPUT') el.value = '';
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        });
+
+        container.appendChild(newRow);
+        varianceIndex++;
+    }
+
+    function removeVarianceRow(button) {
+        const container = document.getElementById('variances-container');
+        if (container.querySelectorAll('.variance-row').length > 1) {
+            button.closest('.variance-row').remove();
+        }
+    }
+
     // تغيير الصورة الرئيسية في المعاينة عند اختيار صورة من المعرض
     document.querySelectorAll('.gallery-radio').forEach(radio => {
         radio.addEventListener('change', () => {
