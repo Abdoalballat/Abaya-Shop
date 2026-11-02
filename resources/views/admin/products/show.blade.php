@@ -145,10 +145,13 @@
         @endif
 
         {{-- الكمية --}}
-        <div class="flex items-center justify-between p-4 bg-white border border-[#F0D9DF] rounded-2xl shadow-sm">
+<div class="flex items-center justify-between p-4 bg-white border border-[#F0D9DF] rounded-2xl shadow-sm">
             <div>
                 <h3 class="font-bold text-sm text-[#3B2530]">الكمية المطلوبة</h3>
-                <p id="stock-hint" class="text-[11px] text-[#C2577A] mt-0.5 hidden"></p>
+                {{-- إظهار المخزون الكلي للمنتج --}}
+                <p class="text-[12px] text-[#8A6E78] mt-1 font-bold">
+                    المتاح في المخزن: <span id="max-stock-display" class="text-[#C2577A]">{{ $globalStock }}</span> قطعة
+                </p>
             </div>
             <div class="flex items-center bg-[#FDEEF0] rounded-full p-1 gap-3">
                 <button type="button" onclick="updateQty(1)" aria-label="زيادة"
@@ -294,10 +297,18 @@
             (quantity * productData.price).toLocaleString('en-US');
     }
 
-    function updateQty(change) {
+function updateQty(change) {
         const next = quantity + change;
+        
+        // منع النزول عن 1
         if (next < 1) return;
-        if (next > globalStock) { toast('أقصى كمية متاحة هي ' + globalStock); return; }
+        
+        // منع تخطي المخزون المتاح
+        if (next > globalStock) { 
+            toast('أقصى كمية متاحة في المخزن هي ' + globalStock + ' قطعة'); 
+            return; 
+        }
+        
         quantity = next;
         renderQty();
     }
