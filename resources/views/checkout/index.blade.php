@@ -162,7 +162,7 @@
     
     <a href="https://wa.me/201021002218" target="_blank" class="w-full h-[52px] bg-[#25D366] hover:bg-[#20bd5c] text-white rounded-[14px] font-bold transition-all flex items-center justify-center gap-2 mt-3">
         <iconify-icon icon="logos:whatsapp-icon" width="20"></iconify-icon>
-        <span>إرسال السلة للاستفسار عبر واتساب</span>
+        <span> للاستفسار عبر واتساب</span>
     </a>
 @endsection
 
