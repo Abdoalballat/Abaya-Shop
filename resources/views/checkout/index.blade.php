@@ -110,7 +110,7 @@
                             <iconify-icon icon="lucide:check-circle" class="text-[#9B87C9] hidden peer-checked:block"></iconify-icon>
                         </div>
                         <div class="flex items-center justify-between bg-white/50 p-2 rounded-[10px] border border-[#F0D9DF]/50">
-                            <code class="font-mono text-lg text-[#3B2530]" id="vodafone-number">01023456789</code>
+                            <code class="font-mono text-lg text-[#3B2530]" id="vodafone-number">01021002218</code>
                             <button type="button" onclick="copyToClipboard('vodafone-number')" class="text-[10px] bg-[#9B87C9] text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-[#8670B4] transition-colors">
                                 <iconify-icon icon="lucide:copy" width="12"></iconify-icon>نسخ
                             </button>
@@ -160,7 +160,7 @@
         <span>تأكيد الطلب وإرسال الإيصال</span>
     </button>
     
-    <a href="https://wa.me/201023456789" target="_blank" class="w-full h-[52px] bg-[#25D366] hover:bg-[#20bd5c] text-white rounded-[14px] font-bold transition-all flex items-center justify-center gap-2 mt-3">
+    <a href="https://wa.me/201021002218" target="_blank" class="w-full h-[52px] bg-[#25D366] hover:bg-[#20bd5c] text-white rounded-[14px] font-bold transition-all flex items-center justify-center gap-2 mt-3">
         <iconify-icon icon="logos:whatsapp-icon" width="20"></iconify-icon>
         <span>إرسال السلة للاستفسار عبر واتساب</span>
     </a>

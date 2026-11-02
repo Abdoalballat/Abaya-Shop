@@ -18,7 +18,7 @@
 
     <!-- شريط علوي مع زر الرجوع -->
     <header class="bg-white border-b border-[#F0D9DF] p-6 sticky top-0 z-50 shadow-sm flex items-center gap-4">
-        <a href="{{ route('admin.dashboard') }}" class="w-10 h-10 flex items-center justify-center bg-[#FDEEF0] text-[#C2577A] rounded-full hover:scale-105 transition-transform" title="رجوع للوحة التحكم">
+        <a href="{{ (route('admin.dashboard'). '#orders-section') }}" class="w-10 h-10 flex items-center justify-center bg-[#FDEEF0] text-[#C2577A] rounded-full hover:scale-105 transition-transform" title="رجوع للوحة التحكم">
             <iconify-icon icon="lucide:arrow-right" width="24"></iconify-icon>
         </a>
         <h1 class="text-2xl font-bold font-heading text-[#C2577A]">تفاصيل الطلب #{{ $order->id }}</h1>
