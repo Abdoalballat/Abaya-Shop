@@ -45,7 +45,16 @@
     @stack('styles')
 </head>
 <body class="floral-pattern flex flex-col min-h-screen">
-    
+    @if($errors->any())
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+        <strong class="font-bold">عفواً! هناك خطأ:</strong>
+        <ul class="list-disc px-4 mt-2">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
     @if(!isset($hideNavbar))
     <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#F0D9DF] px-5 pt-14 pb-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
