@@ -629,10 +629,6 @@
 
     <!-- كود الجافاسكريبت للتبديل بين الأقسام ومعاينة الصور -->
     <script>
-        let varianceIndex = {{ $nextIndex }};
-
-    
-
         function switchTab(tabId, element) {
             // إخفاء كل المحتوى
             document.querySelectorAll('.tab-content').forEach(section => {
