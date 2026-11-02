@@ -19,6 +19,7 @@ Schema::create('products', function (Blueprint $table) {
     $table->text('description')->nullable();
     $table->string('material_type')->nullable();
     $table->decimal('price', 10, 2);
+    $table->bigInteger('stock');
     $table->boolean('is_active')->default(true)->index();
     $table->softDeletes(); // Index لتسريع الفلترة
     $table->timestamps();

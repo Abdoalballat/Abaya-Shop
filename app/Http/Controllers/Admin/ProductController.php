@@ -17,6 +17,39 @@ class ProductController extends Controller
 {
     protected ImageKitService $imageKit;
 
+    /**
+ * يولّد كل توليفات (لون × مقاس) المختارة، ويضيف الناقص ويشيل الزايد.
+ * التوليفات اللي اتشالت بتتعمل soft delete عشان الطلبات القديمة ما تبوظش.
+ */
+private function syncVariances(Product $product, array $colorIds, array $sizeIds): void
+{
+    $wanted = [];
+    foreach (array_unique($colorIds) as $c) {
+        foreach (array_unique($sizeIds) as $s) {
+            $wanted[$c . '-' . $s] = ['color_id' => $c, 'size_id' => $s];
+        }
+    }
+
+    $existing = $product->variances()->withTrashed()->get()
+        ->keyBy(fn ($v) => $v->color_id . '-' . $v->size_id);
+
+    foreach ($wanted as $key => $pair) {
+        $variance = $existing->get($key);
+
+        if (!$variance) {
+            $product->variances()->create($pair);
+        } elseif ($variance->trashed()) {
+            $variance->restore();
+        }
+    }
+
+    foreach ($existing->diffKeys($wanted) as $variance) {
+        if (!$variance->trashed()) {
+            $variance->delete();
+        }
+    }
+}
+
     public function __construct(ImageKitService $imageKit)
     {
         $this->imageKit = $imageKit;
@@ -42,64 +75,62 @@ public function index()
     }
 
     public function store(Request $request)
-    {
-        // 1. تحديث الـ Validation ليطابق أسماء الحقول في الفورم
-        // dd('here');
-        $request->validate([
-            'name'          => 'required|string|max:255',
-            'code'          => 'required|string|max:255',
-            'price'         => 'required|numeric',
-            'department_id' => 'required|exists:departments,id',
-            'primary_image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048', // تم تعديل الاسم هنا
-            'variances'     => 'required|array', // تم تعديل الاسم هنا للجمع
-            'variances.*.color_id' => 'required|exists:colors,id',
-            'variances.*.size_id'  => 'required|exists:sizes,id',
-            'variances.*.stock'    => 'required|integer|min:0',
-        ], [
-            // رسائل خطأ مخصصة بالعربي (اختياري)
-            'primary_image.required' => 'الصورة الرئيسية للموديل مطلوبة.',
-            'variances.required'     => 'يجب إضافة لون ومقاس واحد على الأقل للموديل.',
-        ]);
+{
+    $data = $request->validate([
+        'name'                => 'required|string|max:255',
+        'code'                => 'required|string|max:255|unique:products,code',
+        'price'               => 'required|numeric|min:0',
+        'stock'               => 'required|integer|min:0',
+        'department_id'       => 'required|exists:departments,id',
+        'material_type'       => 'nullable|string|max:255',
+        'description'         => 'nullable|string',
+        'primary_image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        'additional_images.*' => 'nullable|image|max:4096',
+        'colors'              => 'required|array|min:1',
+        'colors.*'            => 'integer|exists:colors,id',
+        'sizes'               => 'required|array|min:1',
+        'sizes.*'             => 'integer|exists:sizes,id',
+    ], [
+        'primary_image.required' => 'الصورة الرئيسية للموديل مطلوبة.',
+        'colors.required'        => 'اختاري لوناً واحداً على الأقل.',
+        'sizes.required'         => 'اختاري مقاساً واحداً على الأقل.',
+        'stock.required'         => 'اكتبي الكمية المتاحة من الموديل.',
+    ]);
 
-        // 2. كود الحفظ (استخدم variances بدل variance)
-        $product = Product::create([
-            'name'          => $request->name,
-            'code'          => $request->code,
-            'price'         => $request->price,
-            'department_id' => $request->department_id,
-            'material'      => $request->material,
-            'description'   => $request->description,
-        ]);
+    // نرفع الصور الأول، لو فشلت ما يتعملش منتج ناقص
+    $uploaded = $this->imageKit->upload($request->file('primary_image'), 'products');
 
-        // 3. حفظ الألوان والمقاسات
-        if ($request->has('variances')) {
-            foreach ($request->variances as $variance) {
-                if (isset($variance['color_id']) && isset($variance['size_id']) && isset($variance['stock'])) {
-                    $product->variances()->create([
-                        'color_id' => $variance['color_id'],
-                        'size_id'  => $variance['size_id'],
-                        'stock'    => $variance['stock'],
-                    ]);
-                }
-            }
-        }
-
-// 4. كود حفظ الصورة الرئيسية (باستخدام primary_image)
-        if ($request->hasFile('primary_image')) {
-            // الرفع على ImageKit
-            $uploaded = $this->imageKit->upload($request->file('primary_image'), 'products');
-            
-            // حفظ الرابط في الداتابيز كصورة رئيسية
-            $product->images()->create([
-                'image_path' => $uploaded->url, // بيحفظ الرابط السحابي المباشر
-                'is_main'    => true,
-            ]);
-        }
-
-        // توجيه الأدمن لنفس القسم مع رسالة نجاح
-        return redirect(route('admin.dashboard') . '#add-product-section')
-               ->with('success', 'تم إضافة الموديل بنجاح!');
+    $extraUrls = [];
+    foreach ($request->file('additional_images', []) as $file) {
+        $extraUrls[] = $this->imageKit->upload($file, 'products')->url;
     }
+
+    DB::transaction(function () use ($data, $uploaded, $extraUrls) {
+        $product = Product::create([
+            'name'          => $data['name'],
+            'code'          => $data['code'],
+            'price'         => $data['price'],
+            'stock'         => $data['stock'],
+            'department_id' => $data['department_id'],
+            'material_type' => $data['material_type'] ?? null,
+            'description'   => $data['description'] ?? null,
+        ]);
+
+        $this->syncVariances($product, $data['colors'], $data['sizes']);
+
+        $product->images()->create([
+            'image_path' => $uploaded->url,
+            'is_main'    => true,
+        ]);
+
+        foreach ($extraUrls as $url) {
+            $product->images()->create(['image_path' => $url, 'is_main' => false]);
+        }
+    });
+
+    return redirect(route('admin.dashboard') . '#add-product-section')
+        ->with('success', 'تم إضافة الموديل بنجاح!');
+}
 
 public function edit(Product $product)
     {
@@ -112,103 +143,59 @@ public function edit(Product $product)
         return view('admin.products.edit', compact('product', 'departments', 'colors', 'sizes'));
     }
 
-    public function update(Request $request, Product $product)
+public function update(Request $request, Product $product)
 {
-    $request->validate([
-        'name'               => 'required|string|max:255',
-        'code'               => 'required|string|max:255|unique:products,code,' . $product->id,
-        'department_id'      => 'required|exists:departments,id',
-        'price'              => 'required|numeric|min:0',
-        'description'        => 'nullable|string',
-        'material_type'      => 'nullable|string|max:255',
-        'main_image_id'      => 'nullable|exists:product_images,id',
-        'gallery_images.*'   => 'nullable|image|max:4096',
-        'variance'           => 'required|array|min:1',
-        'variance.*.color_id' => 'required|exists:colors,id',
-        'variance.*.size_id'  => 'required|exists:sizes,id',
-        'variance.*.stock'    => 'required|integer|min:0',
+    $data = $request->validate([
+        'name'             => 'required|string|max:255',
+        'code'             => 'required|string|max:255|unique:products,code,' . $product->id,
+        'department_id'    => 'required|exists:departments,id',
+        'price'            => 'required|numeric|min:0',
+        'stock'            => 'required|integer|min:0',
+        'description'      => 'nullable|string',
+        'material_type'    => 'nullable|string|max:255',
+        'main_image_id'    => 'nullable|exists:product_images,id',
+        'gallery_images.*' => 'nullable|image|max:4096',
+        'colors'           => 'required|array|min:1',
+        'colors.*'         => 'integer|exists:colors,id',
+        'sizes'            => 'required|array|min:1',
+        'sizes.*'          => 'integer|exists:sizes,id',
     ]);
 
-    DB::transaction(function () use ($request, $product) {
+    // نرفع الصور الجديدة قبل الـ transaction
+    $uploads = [];
+    if ($request->hasFile('gallery_images')) {
+        foreach ($request->file('gallery_images') as $file) {
+            $uploads[] = $this->imageKit->upload($file, 'products')->url;
+        }
+    }
 
-        // 1) تحديث بيانات المنتج
+    DB::transaction(function () use ($request, $product, $data, $uploads) {
         $product->update([
-            'department_id' => $request->department_id,
-            'code'          => $request->code,
-            'description'   => $request->description,
-            'material_type' => $request->material_type,
-            'price'         => $request->price,
+            'name'          => $data['name'],
+            'department_id' => $data['department_id'],
+            'code'          => $data['code'],
+            'description'   => $data['description'] ?? null,
+            'material_type' => $data['material_type'] ?? null,
+            'price'         => $data['price'],
+            'stock'         => $data['stock'],
             'is_active'     => $request->has('is_active'),
         ]);
 
-        // 2) الصورة الرئيسية (بتتنفذ بس لو المستخدم اختار)
         if ($request->filled('main_image_id')) {
             $product->images()->update(['is_main' => false]);
-            $product->images()
-                ->where('id', $request->main_image_id)
-                ->update(['is_main' => true]);
+            $product->images()->where('id', $request->main_image_id)->update(['is_main' => true]);
         }
 
-        // 3) رفع صور جديدة (لو موجودة) — الصور القديمة مش بتتمسح
-        if ($request->hasFile('gallery_images')) {
-            foreach ($request->file('gallery_images') as $imageFile) {
-                $uploaded = $this->imageKit->upload($imageFile, 'products');
-                $product->images()->create([
-                    'image_path'     => $uploaded->url,
-                    'is_main' => false,
-                ]);
-            }
+        foreach ($uploads as $url) {
+            $product->images()->create(['image_path' => $url, 'is_main' => false]);
         }
 
-        // ===================================================
-        // 4) تحديث الـ variants بشكل آمن (بدون حذف المربوط بالطلبات)
-        // ===================================================
-
-        // اللي جاي من الفورم متجمّع بالمفتاح "color_id-size_id"
-        $submitted = collect($request->variance)
-            ->keyBy(fn($v) => $v['color_id'] . '-' . $v['size_id']);
-
-        // الموجود حالياً في الداتابيز بنفس المفتاح
-        $existing = $product->variances()->get()->keyBy(
-            fn($v) => $v->color_id . '-' . $v->size_id
-        );
-
-        // (أ) تحديث أو إنشاء
-        foreach ($submitted as $key => $data) {
-            if ($existing->has($key)) {
-                $variance = $existing->get($key);
-                if ((int) $variance->stock !== (int) $data['stock']) {
-                    $variance->update(['stock' => $data['stock']]);
-                }
-                $existing->forget($key); // هنشيله من القائمة عشان مايتحسبش "محذوف"
-            } else {
-                $product->variances()->create([
-                    'color_id' => $data['color_id'],
-                    'size_id'  => $data['size_id'],
-                    'stock'    => $data['stock'],
-                ]);
-            }
-        }
-
-        // (ب) اللي فضل في $existing = اتحذف من الفورم
-        foreach ($existing as $variance) {
-            $usedInOrders = DB::table('order_items')
-                ->where('product_variance_id', $variance->id)
-                ->exists();
-
-            if ($usedInOrders) {
-                // مربوط بطلب قديم → مينفعش نمسحه، نصفّر مخزونه
-                $variance->update(['stock' => 0]);
-            } else {
-                $variance->delete();
-            }
-        }
+        $this->syncVariances($product, $data['colors'], $data['sizes']);
     });
 
     return redirect(route('admin.dashboard') . '#products-section')
-                ;
+        ->with('success', 'تم تحديث الموديل بنجاح!');
 }
-
     public function destroy(Product $product)
     {
         // التأكد إن المنتج مش مستخدم في أي طلب قديم

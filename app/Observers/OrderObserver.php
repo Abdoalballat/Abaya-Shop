@@ -1,9 +1,10 @@
 <?php
 
 namespace App\Observers;
-
-use App\Models\Order;
+use App\Models\Product;
 use App\Models\ProductVariance;
+use Illuminate\Support\Facades\DB;
+use App\Models\Order;
 
 class OrderObserver
 {
@@ -11,21 +12,34 @@ class OrderObserver
      * يتم تنفيذ هذه الدالة في كل مرة يتم فيها تحديث الطلب
      */
     public function updated(Order $order): void
-    {
-        // 1. نتأكد إن حالة الطلب اتغيرت، وبقت إما مرفوض أو ملغي
-        if ($order->isDirty('status') && in_array($order->status, ['rejected', 'cancelled'])) {
-            
-            // 2. نتأكد إن الحالة القديمة مكنتش ملغية أصلاً (عشان منرجعش المخزون مرتين بالغلط)
-            if (!in_array($order->getOriginal('status'), ['rejected', 'cancelled'])) {
-                
-                // 3. نلف على منتجات الطلب ونرجع المخزون
-                foreach ($order->items as $item) {
-                    if ($item->product_variance_id) {
-                        ProductVariance::where('id', $item->product_variance_id)
-                            ->increment('stock', $item->quantity);
-                    }
-                }
+{
+    if (!$order->isDirty('status') || !in_array($order->status, ['rejected', 'cancelled'])) {
+        return;
+    }
+
+    // الحالة القديمة كانت ملغية أصلاً؟ ما نرجّعش مرتين
+    if (in_array($order->getOriginal('status'), ['rejected', 'cancelled'])) {
+        return;
+    }
+
+    DB::transaction(function () use ($order) {
+        $variantIds = $order->items->pluck('product_variance_id')->filter()->unique();
+
+        $productByVariant = ProductVariance::withTrashed()
+            ->whereIn('id', $variantIds)
+            ->pluck('product_id', 'id');
+
+        $perProduct = [];
+        foreach ($order->items as $item) {
+            $pid = $productByVariant[$item->product_variance_id] ?? null;
+            if ($pid) {
+                $perProduct[$pid] = ($perProduct[$pid] ?? 0) + $item->quantity;
             }
         }
-    }
+
+        foreach ($perProduct as $pid => $qty) {
+            Product::where('id', $pid)->increment('stock', $qty);
+        }
+    });
+}
 }
