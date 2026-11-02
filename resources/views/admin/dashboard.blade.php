@@ -628,7 +628,38 @@
     </div>
 
     <!-- كود الجافاسكريبت للتبديل بين الأقسام ومعاينة الصور -->
-    <script>
+    <script> 
+        async function compressImage(file, maxSide = 1600, quality = 0.82) {
+    if (!file.type.startsWith('image/') || file.type === 'image/gif') return file;
+
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+    if (!blob || blob.size >= file.size) return file;   // لو الأصل أصغر خليه
+
+    const name = file.name.replace(/\.\w+$/, '') + '.jpg';
+    return new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() });
+}
+
+// يشتغل تلقائياً على أي input من الأنواع دي
+const compressInputs = ['primary_image', 'additional_images', 'gallery_images', 'payment_photo'];
+
+document.addEventListener('change', async (e) => {
+    const input = e.target;
+    if (input.type !== 'file' || !compressInputs.includes(input.id || input.name.replace('[]', ''))) return;
+    if (!input.files.length) return;
+
+    const dt = new DataTransfer();
+    for (const f of input.files) dt.items.add(await compressImage(f));
+    input.files = dt.files;
+}, true);
         function switchTab(tabId, element) {
             // إخفاء كل المحتوى
             document.querySelectorAll('.tab-content').forEach(section => {

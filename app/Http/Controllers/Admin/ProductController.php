@@ -84,7 +84,7 @@ public function index()
         'department_id'       => 'required|exists:departments,id',
         'material_type'       => 'nullable|string|max:255',
         'description'         => 'nullable|string',
-        'primary_image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        'primary_image'       => 'required|image|mimes:jpeg,png,jpg,webp|max:4096',
         'additional_images.*' => 'nullable|image|max:4096',
         'colors'              => 'required|array|min:1',
         'colors.*'            => 'integer|exists:colors,id',
