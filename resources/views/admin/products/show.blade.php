@@ -320,11 +320,11 @@ function updateQty(change) {
         if (hasSizes  && !selectedSize.id)  { toast('من فضلك اختاري المقاس أولاً'); flag('size-section'); return; }
 
         const imgObj = gallery.find(g => g.color_id == selectedColor.id) || gallery[0];
-
+        
+        // دمجنا كل البيانات (ومن ضمنها المخزون) في متغير واحد بس
         const item = {
             product_id: productData.id,
-            // تم إلغاء ربط السلة برقم فريانس محدد، السلة ستحتفظ بمعرف المنتج وخياراته
-            product_variance_id: null, 
+            product_variance_id: null, // تم الإلغاء
             color_id: selectedColor.id,
             size_id: selectedSize.id,
             name: productData.name,
@@ -334,6 +334,7 @@ function updateQty(change) {
             color: selectedColor.name || 'الأساسي',
             size: selectedSize.name || 'الأساسي',
             quantity: quantity,
+            stock: globalStock, // <-- إضافة المخزون هنا بنجاح
             notes: document.getElementById('order-notes').value.trim()
         };
 

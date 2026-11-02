@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Order;
-use App\Models\ProductVariance;
+use App\Models\Product;
+use App\Models\Color;
+use App\Models\Size;
 use App\Models\Governorate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -34,38 +36,41 @@ class OrderService
             // 2. معالجة عناصر السلة
             foreach ($data['items'] as $item) {
                 // استخدام lockForUpdate يمنع أي عملية شراء أخرى لنفس القطعة حتى تنتهي هذه العملية
-                $variant = ProductVariance::with(['product', 'color', 'size'])
-                    ->where('id', $item['product_variance_id'])
+                $product = Product::where('id', $item['product_id'])
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                // قراءة اسم المنتج بشكل صحيح لتجنب Null
-                $productName = $variant->product->name ?? 'عباية';
-
-                // التحقق من المخزون
-                if ($variant->stock < $item['quantity']) {
-                    $colorName = $variant->color ? $variant->color->name : 'بدون لون';
-                    $sizeName = $variant->size ? $variant->size->name : 'بدون مقاس';
-                    throw new Exception("عذراً، المخزون غير كافٍ للمنتج: {$productName} (اللون: {$colorName}، المقاس: {$sizeName}).");
+                // التحقق من المخزون الإجمالي للمنتج
+                if ($product->stock < $item['quantity']) {
+                    throw new Exception("عذراً، المخزون غير كافٍ للمنتج: {$product->name}. الكمية المتاحة: {$product->stock}");
                 }
 
-                // تنفيذ الخصم مباشرة
-                ProductVariance::where('id', $item['product_variance_id'])
-                    ->decrement('stock', $item['quantity']);
+                // تنفيذ الخصم مباشرة من جدول المنتجات
+                $product->decrement('stock', $item['quantity']);
 
-                $unitPrice = $variant->product->price;
-                
-                // حساب السعر (تم إصلاح السطر المكسور)
-                $totalPrice = $unitPrice * $item['quantity']; 
+                $unitPrice = $product->price;
+                $totalPrice = $unitPrice * $item['quantity'];
                 $subtotal += $totalPrice;
+
+                // استخراج أسماء اللون والمقاس للحفظ في الفاتورة
+                $colorName = 'الأساسي';
+                if (!empty($item['color_id'])) {
+                    $color = Color::find($item['color_id']);
+                    $colorName = $color ? $color->name : 'الأساسي';
+                }
+
+                $sizeName = 'الأساسي';
+                if (!empty($item['size_id'])) {
+                    $size = Size::find($item['size_id']);
+                    $sizeName = $size ? $size->name : 'الأساسي';
+                }
 
                 // تجهيز الـ Snapshot لعناصر الطلب
                 $orderItemsData[] = [
-                    'product_id'   => $variant->product_id,
-                    'product_name' => $productName,
-                    'product_variance_id' => $item['product_variance_id'], // تم الإصلاح هنا
-                    'color'        => $variant->color ? $variant->color->name : 'بدون لون',
-                    'size'         => $variant->size ? $variant->size->name : 'بدون مقاس',
+                    'product_id'   => $product->id,
+                    'product_name' => $product->name,
+                    'color'        => $colorName,
+                    'size'         => $sizeName,
                     'quantity'     => $item['quantity'],
                     'unit_price'   => $unitPrice,
                     'total_price'  => $totalPrice,

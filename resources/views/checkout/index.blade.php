@@ -17,6 +17,18 @@
         </div>
     </section>
 
+    <!-- عرض رسائل الأخطاء القادمة من الباك إند -->
+    @if($errors->any())
+        <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-[14px] mb-8">
+            <strong class="font-bold text-sm"><iconify-icon icon="lucide:alert-circle" class="inline align-middle"></iconify-icon> عفواً، هناك خطأ:</strong>
+            <ul class="list-disc px-5 mt-2 text-xs space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- الفورم الأساسي المرتبط بالـ Route -->
     <form id="checkout-form" action="{{ route('orders.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
@@ -55,14 +67,12 @@
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-[#8A6E78] mr-2">الاسم الكامل</label>
                     <input type="text" name="customer_name" value="{{ old('customer_name') }}" required placeholder="اكتبي اسمك الثلاثي..." class="w-full h-[52px] px-4 rounded-[14px] bg-white border border-[#F0D9DF] focus:outline-none focus:ring-2 focus:ring-[#C2577A]/20 transition-all">
-                    @error('customer_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-[#8A6E78] mr-2">رقم الهاتف</label>
-                        <input type="tel" name="customer_phone" value="{{ old('customer_phone') }}" required placeholder="01xxxxxxxxx" class="w-full h-[52px] px-4 rounded-[14px] bg-white border border-[#F0D9DF] focus:outline-none focus:ring-2 focus:ring-[#C2577A]/20 text-left" dir="ltr">
-                        @error('customer_phone') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        <input type="number" name="customer_phone" value="{{ old('customer_phone') }}" required placeholder="01xxxxxxxxx" class="w-full h-[52px] px-4 rounded-[14px] bg-white border border-[#F0D9DF] focus:outline-none focus:ring-2 focus:ring-[#C2577A]/20 text-left" dir="ltr">
                     </div>
                     
                     <div class="space-y-1.5">
@@ -77,14 +87,12 @@
                                 @endforeach
                             @endisset
                         </select>
-                        @error('governorate_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
                 
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-[#8A6E78] mr-2">عنوان التفاصيل</label>
                     <textarea name="address_details" required placeholder="رقم المبنى، الشارع، علامة مميزة..." class="w-full p-4 rounded-[14px] bg-white border border-[#F0D9DF] focus:outline-none focus:ring-2 focus:ring-[#C2577A]/20 h-24 resize-none">{{ old('address_details') }}</textarea>
-                    @error('address_details') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
             </div>
         </section>
@@ -140,7 +148,6 @@
                 </div>
                 <input type="file" name="payment_photo" id="receipt-upload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" required>
             </div>
-            @error('payment_photo') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
         </section>
         
         <!-- الحقول المخفية للمنتجات سيتم حقنها هنا بواسطة JS -->
@@ -182,41 +189,74 @@
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let subtotal = 0;
 
-        if(cart.length === 0) {
-            cartItemsContainer.innerHTML = '<p class="text-center text-sm text-[#8A6E78]">السلة فارغة. يرجى إضافة منتجات أولاً.</p>';
-        } else {
-            cart.forEach((item, index) => {
-                let itemTotal = parseFloat(item.price) * parseInt(item.quantity);
-                subtotal += itemTotal;
-                
-                cartItemsContainer.innerHTML += `
-                    <div class="flex gap-4">
-                        <div class="w-20 h-24 rounded-[14px] overflow-hidden shrink-0 relative bg-gray-100">
-                            <img src="${item.image_url}" alt="${item.name}" class="w-full h-full object-cover">
-                            <span class="absolute top-1 right-1 bg-white/90 text-[10px] px-2 py-0.5 rounded-full text-[#C2577A] font-bold border border-[#F0D9DF]">كود ${item.code}</span>
-                        </div>
-                        <div class="flex-1 flex flex-col justify-between">
-                            <div>
-                                <h4 class="font-bold">${item.name}</h4>
-                                <p class="text-xs text-[#8A6E78] mt-1">لون: ${item.color} • مقاس: ${item.size}</p>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-bold text-[#8A6E78]">الكمية: ${item.quantity}</span>
-                                <span class="font-bold text-[#C9A36B]">${itemTotal} ج.م</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
+        // دالة إعادة رسم السلة لتحديث الكميات الديناميكية
+        window.renderCart = function() {
+            cartItemsContainer.innerHTML = '';
+            subtotal = 0;
 
-        subtotalDisplay.innerText = subtotal + ' ج.م';
+            if(cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-center text-sm text-[#8A6E78]">السلة فارغة. يرجى إضافة منتجات أولاً.</p>';
+            } else {
+                cart.forEach((item, index) => {
+                    let itemTotal = parseFloat(item.price) * parseInt(item.quantity);
+                    subtotal += itemTotal;
+                    
+                    // استخراج المخزون لو موجود، أو افتراض 99 كحد أقصى للحماية
+                    let maxStock = item.stock || 99;
+                    let stockHint = item.stock ? `<p class="text-[10px] text-[#C2577A] mb-1 font-bold">المتاح: ${item.stock}</p>` : '';
+                    
+                    cartItemsContainer.innerHTML += `
+                        <div class="flex gap-4">
+                            <div class="w-20 h-24 rounded-[14px] overflow-hidden shrink-0 relative bg-gray-100">
+                                <img src="${item.image_url}" alt="${item.name}" class="w-full h-full object-cover">
+                                <span class="absolute top-1 right-1 bg-white/90 text-[10px] px-2 py-0.5 rounded-full text-[#C2577A] font-bold border border-[#F0D9DF]">كود ${item.code}</span>
+                            </div>
+                            <div class="flex-1 flex flex-col justify-between">
+                                <div>
+                                    <h4 class="font-bold">${item.name}</h4>
+                                    <p class="text-[11px] text-[#8A6E78] mt-1">لون: ${item.color} | مقاس: ${item.size}</p>
+                                </div>
+                                <div class="flex items-end justify-between mt-2">
+                                    <div>
+                                        ${stockHint}
+                                        <div class="flex items-center bg-[#FDEEF0] rounded-full p-0.5 gap-2 w-fit">
+                                            <button type="button" onclick="updateCartItemQty(${index}, 1)" class="w-7 h-7 flex items-center justify-center bg-[#C2577A] rounded-full text-white font-bold text-lg active:scale-90 transition-transform">+</button>
+                                            <span class="text-sm font-bold text-[#3B2530] w-4 text-center">${item.quantity}</span>
+                                            <button type="button" onclick="updateCartItemQty(${index}, -1)" class="w-7 h-7 flex items-center justify-center bg-white rounded-full text-[#C2577A] font-bold text-lg active:scale-90 transition-transform">−</button>
+                                        </div>
+                                    </div>
+                                    <span class="font-bold text-[#C9A36B]">${itemTotal.toLocaleString()} ج.م</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            updateTotals();
+        };
 
-// دالة حساب الأسعار النهائية
+        // دالة تحديث الكمية لمنتج معين
+        window.updateCartItemQty = function(index, change) {
+            let item = cart[index];
+            let newQty = parseInt(item.quantity) + change;
+            let maxStock = item.stock || 99; // الحد الأقصى للمخزون
+            
+            if (newQty < 1) return;
+            if (newQty > maxStock) {
+                alert('أقصى كمية متاحة من هذا المنتج هي ' + maxStock + ' قطعة.');
+                return;
+            }
+            
+            item.quantity = newQty;
+            localStorage.setItem('cart', JSON.stringify(cart));
+            window.dispatchEvent(new CustomEvent('cart:updated')); // لتحديث الرقم في الهيدر
+            renderCart();
+        };
+
+        // دالة حساب الأسعار النهائية
         function updateTotals() {
             let shippingCost = 0;
             
-            // التحقق من اختيار المحافظة لحساب الشحن
             if (govSelect && govSelect.selectedIndex > 0 && govSelect.value !== "") {
                 shippingCost = parseFloat(govSelect.options[govSelect.selectedIndex].getAttribute('data-price') || 0);
                 shippingDisplay.innerText = shippingCost + ' ج.م';
@@ -224,30 +264,17 @@
                 shippingDisplay.innerText = 'سيتم حسابه';
             }
 
-            // الإجمالي النهائي = المجموع الفرعي + الشحن
             let finalTotal = subtotal + shippingCost;
-
-            // تحديث النصوص في الصفحة (مع إضافة toLocaleString عشان الفواصل زي 12,405)
             subtotalDisplay.innerText = subtotal.toLocaleString() + ' ج.م';
             totalDisplay.innerText = finalTotal.toLocaleString() + ' ج.م';
-
-            // تحديث الرقم اللي في زرار تأكيد الطلب تحت (لو موجود)
-            let footerTotalDisplay = document.getElementById('footer-total-display');
-            if (footerTotalDisplay) {
-                footerTotalDisplay.innerText = finalTotal.toLocaleString() + ' ج.م';
-            }
         }
 
-        // ربط تغيير المحافظة بتحديث الأسعار
+        // رسم السلة لأول مرة عند تحميل الصفحة
+        renderCart();
+
         if (govSelect) {
             govSelect.addEventListener('change', updateTotals);
         }
-
-        // استدعاء الدالة فوراً عند فتح الصفحة عشان تعرض الإجمالي حتى قبل اختيار المحافظة
-        updateTotals();
-
-        govSelect.addEventListener('change', updateTotals);
-        if(govSelect.value) updateTotals(); 
 
         form.addEventListener('submit', function(e) {
             if(cart.length === 0) {
@@ -258,9 +285,15 @@
 
             hiddenInputsContainer.innerHTML = ''; 
 
+            // تحديث الحقول المخفية لتدعم التعديل الجديد في الباك إند
             cart.forEach((item, index) => {
+                let colorInput = item.color_id ? `<input type="hidden" name="items[${index}][color_id]" value="${item.color_id}">` : '';
+                let sizeInput = item.size_id ? `<input type="hidden" name="items[${index}][size_id]" value="${item.size_id}">` : '';
+                
                 hiddenInputsContainer.innerHTML += `
-                    <input type="hidden" name="items[${index}][product_variance_id]" value="${item.product_variance_id}">
+                    <input type="hidden" name="items[${index}][product_id]" value="${item.product_id}">
+                    ${colorInput}
+                    ${sizeInput}
                     <input type="hidden" name="items[${index}][quantity]" value="${item.quantity}">
                 `;
             });
