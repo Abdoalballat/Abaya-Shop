@@ -378,10 +378,10 @@
                                                 </div>
                                             </td>
                                             <td class="px-6 py-3">
-                                                @if($totalStock > 5)
-                                                    <span class="status-badge bg-[#e6f4ea] text-[#1e8e3e]">{{ $totalStock }} قطعة</span>
-                                                @elseif($totalStock > 0)
-                                                    <span class="status-badge bg-[#FFF3E0] text-[#C9A36B]">{{ $totalStock }} قطعة</span>
+                                                @if($product->stock > 5)
+                                                    <span class="status-badge bg-[#e6f4ea] text-[#1e8e3e]">{{ $product->stock }} قطعة</span>
+                                                @elseif($product->stock > 0)
+                                                    <span class="status-badge bg-[#FFF3E0] text-[#C9A36B]">{{ $product->stock }} قطعة</span>
                                                 @else
                                                     <span class="status-badge bg-red-50 text-red-500">نفذ</span>
                                                 @endif
