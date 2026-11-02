@@ -1,19 +1,17 @@
 @extends('layouts.app')
 
-@section('title', $product->name . ' - عبايات المصطفى')
+@section('title', $product->name . ' | عبايات المصطفى')
 
 @php
     $hideFooter = true;
 
-    $colors = $product->variances->unique('color_id')->map->color->filter()->values();
-    $sizes  = $product->variances->unique('size_id')->map->size->filter()->values();
-
-    $mappedVariances = $product->variances->map(fn ($v) => [
-        'id'       => $v->id,
-        'color_id' => $v->color_id,
-        'size_id'  => $v->size_id,
-        'stock'    => (int) $v->stock,
-    ])->values()->all();
+    // استدعاء الألوان والمقاسات (لو عملت لهم علاقات جديدة استخدم $product->colors، 
+    // ولو لسه بتجيبهم من الجدول القديم الكود ده هيجيبهم كقوائم منفصلة)
+    $colors = $product->colors ?? $product->variances->unique('color_id')->map->color->filter()->values();
+    $sizes  = $product->sizes ?? $product->variances->unique('size_id')->map->size->filter()->values();
+    
+    // حقل المخزون الجديد اللي في جدول المنتجات
+    $globalStock = (int) $product->stock; 
 
     // المعرض: الرئيسية الأول، وكل صورة مربوطة بلونها
     $gallery = $product->images
@@ -68,7 +66,7 @@
         <div class="relative w-full aspect-[3/4] overflow-hidden rounded-[20px] bg-[#FDEEF0] border border-[#F0D9DF]/60 shadow-sm">
             @if(count($gallery))
                 <img id="main-image" src="{{ $gallery[0]['full'] }}"
-                     alt="{{ $product->name }} - كود {{ $productData['code'] }}"
+                     alt="{{ $product->name }} كود {{ $productData['code'] }}"
                      width="900" height="1200" fetchpriority="high" decoding="async"
                      class="absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-200">
             @else
@@ -199,10 +197,10 @@
 @push('scripts')
 <script>
     const productData = @json($productData);
-    const variances   = @json($mappedVariances);
     const gallery     = @json($gallery);
     const hasColors   = {{ $colors->count() > 0 ? 'true' : 'false' }};
     const hasSizes    = {{ $sizes->count() > 0 ? 'true' : 'false' }};
+    const globalStock = {{ $globalStock }};
     const cartUrl     = @json(route('cart'));
 
     let selectedColor = { id: null, name: null };
@@ -226,18 +224,6 @@
         el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
     }
 
-    function currentVariance() {
-        return variances.find(v =>
-            (!hasColors || v.color_id == selectedColor.id) &&
-            (!hasSizes  || v.size_id  == selectedSize.id)
-        ) || null;
-    }
-
-    function maxQty() {
-        const v = currentVariance();
-        return v ? Math.max(v.stock, 0) : 99;
-    }
-
     /* ---------- الصور ---------- */
     function selectImage(i) {
         if (!gallery[i]) return;
@@ -250,7 +236,6 @@
         document.querySelectorAll('.thumb').forEach(el =>
             el.classList.toggle('selected', Number(el.dataset.index) === i));
 
-        // لو الصورة مربوطة بلون، اختار اللون تلقائياً
         const cid = gallery[i].color_id;
         if (cid && hasColors && selectedColor.id != cid) {
             const btn = document.getElementById('color-btn-' + cid);
@@ -270,54 +255,39 @@
         document.getElementById('color-btn-' + id).classList.add('selected');
         document.getElementById('selected-color-name').textContent = '( ' + name + ' )';
         showColorImage(id);
-        refreshSizes();
-        refreshStock();
     }
 
     function selectSize(id, name) {
         selectedSize = { id, name };
         document.querySelectorAll('.size-option').forEach(el => el.classList.remove('selected'));
         document.getElementById('size-btn-' + id).classList.add('selected');
-        refreshStock();
     }
 
-    // المقاسات اللي مش متاحة للون المختار تتعطل
-    function refreshSizes() {
-        document.querySelectorAll('.size-option').forEach(btn => {
-            const sid = btn.dataset.size;
-            const ok = variances.some(v =>
-                v.size_id == sid && v.stock > 0 &&
-                (!hasColors || !selectedColor.id || v.color_id == selectedColor.id));
-            btn.disabled = !ok;
-            if (!ok && selectedSize.id == sid) {
-                selectedSize = { id: null, name: null };
-                btn.classList.remove('selected');
-            }
-        });
-    }
-
-    // الألوان اللي كلها نفدت تتعطل من الأول
-    function initColors() {
+    // جميع الأزرار تعتمد على المخزون العام للمنتج فقط
+    function checkAvailability() {
+        const isOutOfStock = globalStock <= 0;
+        
+        // تعطيل الألوان إذا كان المنتج نفد تماماً
         document.querySelectorAll('.color-option').forEach(btn => {
-            const cid = btn.dataset.color;
-            btn.disabled = !variances.some(v => v.color_id == cid && v.stock > 0);
+            btn.disabled = isOutOfStock;
         });
-    }
 
-    /* ---------- الكمية ---------- */
-    function refreshStock() {
+        // تعطيل المقاسات إذا كان المنتج نفد تماماً
+        document.querySelectorAll('.size-option').forEach(btn => {
+            btn.disabled = isOutOfStock;
+        });
+
+        // رسالة التنبيه للعميل لو المخزون قليل
         const hint = document.getElementById('stock-hint');
-        const v = currentVariance();
-        if (v && v.stock > 0 && v.stock <= 3) {
-            hint.textContent = 'متبقي ' + v.stock + ' قطع فقط';
+        if (globalStock > 0 && globalStock <= 3) {
+            hint.textContent = 'متبقي ' + globalStock + ' قطع فقط بالمخزن';
             hint.classList.remove('hidden');
         } else {
             hint.classList.add('hidden');
         }
-        if (quantity > maxQty()) quantity = Math.max(maxQty(), 1);
-        renderQty();
     }
 
+    /* ---------- الكمية ---------- */
     function renderQty() {
         document.getElementById('qty-display').textContent = quantity;
         document.getElementById('btn-total-price').textContent =
@@ -327,30 +297,25 @@
     function updateQty(change) {
         const next = quantity + change;
         if (next < 1) return;
-        if (next > maxQty()) { toast('الكمية المتاحة ' + maxQty() + ' فقط'); return; }
+        if (next > globalStock) { toast('أقصى كمية متاحة هي ' + globalStock); return; }
         quantity = next;
         renderQty();
     }
 
     /* ---------- السلة ---------- */
     function addToCart() {
+        if (globalStock <= 0) { toast('عفواً، هذا الموديل نفد من المخزون'); return; }
         if (hasColors && !selectedColor.id) { toast('من فضلك اختاري اللون أولاً'); flag('color-section'); return; }
         if (hasSizes  && !selectedSize.id)  { toast('من فضلك اختاري المقاس أولاً'); flag('size-section'); return; }
 
-        let varianceId = null;
-        if (variances.length > 0) {
-            const v = currentVariance();
-            if (!v)          { toast('هذا اللون مع هذا المقاس غير متوفر حالياً'); return; }
-            if (v.stock <= 0){ toast('عفواً، هذه النسخة نفدت من المخزون'); return; }
-            varianceId = v.id;
-        }
-
-        // صورة السلة: صورة اللون المختار، وإلا أول صورة
         const imgObj = gallery.find(g => g.color_id == selectedColor.id) || gallery[0];
 
         const item = {
             product_id: productData.id,
-            product_variance_id: varianceId,
+            // تم إلغاء ربط السلة برقم فريانس محدد، السلة ستحتفظ بمعرف المنتج وخياراته
+            product_variance_id: null, 
+            color_id: selectedColor.id,
+            size_id: selectedSize.id,
             name: productData.name,
             code: productData.code,
             price: productData.price,
@@ -364,9 +329,12 @@
         let cart = [];
         try { cart = JSON.parse(localStorage.getItem('cart')) || []; } catch (e) { cart = []; }
 
-        // نفس المنتج ونفس النسخة بس هي اللي تتجمع
+        // التجميع في السلة بناءً على تطابق المنتج + اللون + المقاس
         const i = cart.findIndex(c =>
-            c.product_id === item.product_id && c.product_variance_id === item.product_variance_id);
+            c.product_id === item.product_id && 
+            c.color_id === item.color_id && 
+            c.size_id === item.size_id
+        );
 
         if (i > -1) {
             cart[i].quantity += quantity;
@@ -387,8 +355,7 @@
     }
 
     /* ---------- تشغيل ---------- */
-    initColors();
-    refreshSizes();
+    checkAvailability();
     renderQty();
 </script>
 @endpush
