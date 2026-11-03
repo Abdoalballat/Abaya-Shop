@@ -110,7 +110,7 @@
                             <iconify-icon icon="lucide:check-circle" class="text-[#9B87C9] hidden peer-checked:block"></iconify-icon>
                         </div>
                         <div class="flex items-center justify-between bg-white/50 p-2 rounded-[10px] border border-[#F0D9DF]/50">
-                            <code class="font-mono text-lg text-[#3B2530]" id="vodafone-number">01021002218</code>
+                            <code class="font-mono text-lg text-[#3B2530]" id="vodafone-number">01096690412</code>
                             <button type="button" onclick="copyToClipboard('vodafone-number')" class="text-[10px] bg-[#9B87C9] text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-[#8670B4] transition-colors">
                                 <iconify-icon icon="lucide:copy" width="12"></iconify-icon>نسخ
                             </button>
@@ -126,7 +126,7 @@
                             <iconify-icon icon="lucide:check-circle" class="text-[#9B87C9] hidden peer-checked:block"></iconify-icon>
                         </div>
                         <div class="flex items-center justify-between bg-white/50 p-2 rounded-[10px] border border-[#F0D9DF]/50">
-                            <code class="font-mono text-lg text-[#3B2530]" id="instapay-number">mustafa@instapay</code>
+                            <code class="font-mono text-lg text-[#3B2530]" id="instapay-number">01021140021</code>
                              <button type="button" onclick="copyToClipboard('instapay-number')" class="text-[10px] bg-[#9B87C9] text-white px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-[#8670B4] transition-colors">
                                 <iconify-icon icon="lucide:copy" width="12"></iconify-icon>نسخ
                             </button>
